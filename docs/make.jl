@@ -10,7 +10,7 @@ makedocs(;
     sitename="MultivariateInterpolation.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://azoviktor.github.io/MultivariateInterpolation.jl",
+        canonical="https://MultivariatePolynomialSystems.github.io/MultivariateInterpolation.jl",
         edit_link="main",
         assets=["assets/custom.css"],
         collapselevel=2
@@ -21,6 +21,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl",
+    repo="github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl.git",
     devbranch="main",
 )
