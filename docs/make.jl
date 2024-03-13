@@ -1,3 +1,5 @@
+push!(LOAD_PATH,"../src/")
+
 using MultivariateInterpolation
 using Documenter
 
