@@ -2,9 +2,9 @@
 CurrentModule = MultivariateInterpolation
 ```
 
-# MultivariateInterpolation
+# MultivariateInterpolation.jl
 
-Documentation for [MultivariateInterpolation](https://github.com/azoviktor/MultivariateInterpolation.jl).
+Documentation for [MultivariateInterpolation](https://github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl).
 
 ```@index
 ```

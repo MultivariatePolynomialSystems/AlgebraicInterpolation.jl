@@ -6,18 +6,21 @@ DocMeta.setdocmeta!(MultivariateInterpolation, :DocTestSetup, :(using Multivaria
 makedocs(;
     modules=[MultivariateInterpolation],
     authors="Viktor Korotynskiy <korotynskiy.viktor@gmail.com> and contributors",
+    repo="https://github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl/blob/{commit}{path}#{line}",
     sitename="MultivariateInterpolation.jl",
     format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://azoviktor.github.io/MultivariateInterpolation.jl",
         edit_link="main",
-        assets=String[],
+        assets=["assets/custom.css"],
+        collapselevel=2
     ),
     pages=[
-        "Home" => "index.md",
+        "Introduction" => "index.md",
     ],
 )
 
 deploydocs(;
-    repo="github.com/azoviktor/MultivariateInterpolation.jl",
+    repo="github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl",
     devbranch="main",
 )
