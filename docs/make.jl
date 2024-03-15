@@ -12,13 +12,21 @@ makedocs(;
     sitename="MultivariateInterpolation.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://MultivariatePolynomialSystems.github.io/MultivariateInterpolation.jl",
+        canonical="https://multivariatepolynomialsystems.github.io/MultivariateInterpolation.jl",
         edit_link="main",
         assets=["assets/custom.css"],
         collapselevel=2
     ),
     pages=[
         "Introduction" => "index.md",
+        "Interpolation Basis" => "inter_basis.md",
+        "Functions on Algebraic Varieties" => [
+            "Fixed-free interpolation" => "variety/fixed_free.md"
+            "Scaling symmetries" => "scalings.md"
+        ],
+        "Functions on Affine Spaces" => [
+
+        ]
     ],
 )
 
