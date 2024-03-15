@@ -22,7 +22,7 @@ makedocs(;
         "Interpolation Basis" => "inter_basis.md",
         "Functions on Algebraic Varieties" => [
             "Fixed-free interpolation" => "variety/fixed_free.md"
-            "Scaling symmetries" => "scalings.md"
+            "Scaling symmetries" => "variety/scalings.md"
         ],
         "Functions on Affine Spaces" => [
 
