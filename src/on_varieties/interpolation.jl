@@ -1,8 +1,27 @@
 export interpolate_constraints
 
 
+function polynomial_function(
+    coeffs::AbstractVector{<:Number},
+    mons::AbstractMonomialVector;
+    logging::Bool=false
+)
+    @assert length(coeffs) == length(mons)
+    p = sum(to_expressions(mons).*coeffs)
+    logging && println("polynomial = ", p)
+    return p
+end
+
+function polynomial_functions(
+    coeffs::AbstractMatrix{<:Number},
+    mons::AbstractMonomialVector;
+    logging::Bool=false
+)
+    return [polynomial_function(row, mons; logging=logging) for row in eachrow(coeffs)]
+end
+
 function interpolate_constraints(
-    F::AbstractDifferentiatedSystem,
+    F::AbstractDifferentiatedVariety,
     vars::FixedFreeVariables;
     degree::Integer,
     start_point::Union{AbstractVector, Nothing}=nothing,

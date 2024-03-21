@@ -4,7 +4,7 @@ export FixedFreeVariables,
     free,
     nfixed,
     nfree,
-    AbstractSampledSystem,
+    AbstractSampledVariety,
     SampledSystem,
     unknowns,
     parameters,
@@ -87,22 +87,6 @@ function Base.show(io::IO, vars::FixedFreeVariables)
     print(io, " free: ", join(free(vars), ", "))
 end
 
-# TODO: remove?
-struct FixedFreeIndices
-    fixed::Vector{Int}
-    free::Vector{Int}
-end
-
-fixed(ids::FixedFreeIndices) = ids.fixed
-free(ids::FixedFreeIndices) = ids.free
-nfixed(ids::FixedFreeIndices) = length(ids.fixed)
-nfree(ids::FixedFreeIndices) = length(ids.free)
-
-FixedFreeIndices(
-    vars::FixedFreeVariables,
-    all_vars::Vector{Variable}
-) = FixedFreeVariables(indexin(fixed(vars), all_vars), indexin(free(vars), all_vars))
-
 struct FixedFreeSamples
     fixed::Vector{ComplexF64}
     free::Matrix{ComplexF64}
@@ -139,55 +123,20 @@ end
 
 full_jacobian(F::System) = differentiate(expressions(F), variables(F))
 
-abstract type AbstractDifferentiatedSystem end
 
-struct DifferentiatedSystem <: AbstractDifferentiatedSystem
-    system::System
-    full_jacobian::Matrix{Expression}
-end
 
-DifferentiatedSystem(F::System) = DifferentiatedSystem(F, full_jacobian(F))
-HC.System(F::DifferentiatedSystem) = F.system
 
-(F::DifferentiatedSystem)(x::AbstractVector) = System(F)(x)
-find_sample(F::DifferentiatedSystem; kwargs...) = find_sample(System(F); kwargs...)
 
-full_jacobian(F::DifferentiatedSystem) = F.full_jacobian
-full_jacobian(
-    F::AbstractDifferentiatedSystem,
-    x::AbstractVector
-) = evaluate(full_jacobian(F), variables(F) => x)
 
-tangent_space(
-    F::AbstractDifferentiatedSystem,
-    x::AbstractVector;
-    tols::Tolerances=Tolerances(),
-    var_ids::Union{Vector{Int}, Colon}=:
-) = nullspace(full_jacobian(F, x); atol=tols.nullspace_atol)[var_ids, :]
-
-function dimension(
-    F::AbstractDifferentiatedSystem,
-    x::Union{AbstractVector, Nothing}=nothing;
-    tols::Tolerances=Tolerances()
-)
-    x = isnothing(x) ? find_sample(F) : x
-    if !isnothing(x)
-        @assert norm(F(x)) < tols.common_tol
-        J = full_jacobian(F, x)
-        return nvariables(F) - rank(J; atol=tols.rank_atol)
-    else
-        error("Cannot generate a random sample of the system, provide one!")
-    end
-end
 
 dimension(
     F::System,
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
-) = dimension(DifferentiatedSystem(F), x; tols=tols)
+) = dimension(DifferentiatedVariety(F), x; tols=tols)
 
 function finite_dominant_projection(
-    F::AbstractDifferentiatedSystem,
+    F::AbstractDifferentiatedVariety,
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
 )
@@ -214,14 +163,14 @@ function finite_dominant_projection(
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
 )
-    φ = finite_dominant_projection(DifferentiatedSystem(F), x; tols=tols)
+    φ = finite_dominant_projection(DifferentiatedVariety(F), x; tols=tols)
     params = image_vars(φ)
     unknws = setdiff(variables(F), params)
     return System(expressions(F); variables=unknws, parameters=params)
 end
 
 function reasonable_to_sample(
-    F::AbstractDifferentiatedSystem,
+    F::AbstractDifferentiatedVariety,
     vars::FixedFreeVariables,
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
@@ -238,19 +187,22 @@ function reasonable_to_sample(
 end
 
 """
-    possible_to_sample(
-        F::AbstractDifferentiatedSystem,
-        vars::FixedFreeVariables,
-        x::Union{AbstractVector, Nothing}=nothing;
-        tols::Tolerances=Tolerances(),
-        logging::Bool=true
-    )
+    possible_to_sample(X::AbstractDifferentiatedVariety, vars::FixedFreeVariables; kwargs...)
 
-Returns false if there exists a free variable that is determined in finite many ways by all fixed variables. 
-Throws a WARNING if there are no constraints in free variables after fixing all the fixed ones.
+Returns `false` if there exists a free variable in `vars` that is determined in 
+finite many ways by all fixed variables in `vars`. 
+
+Throws a WARNING (for keyword argument `logging=true`) if there are 
+no constraints in free variables after fixing all the fixed ones.
+
+*Keyword arguments*:
+* 
+* `tols::Tolerances=Tolerances()`: tolerances structure used for computations. Tolerances used 
+in this method: same as in [`image_dimension`](@ref).
+* `logging::Bool=true`
 """
 function possible_to_sample(
-    F::AbstractDifferentiatedSystem,
+    F::AbstractDifferentiatedVariety,
     vars::FixedFreeVariables,
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances(),
@@ -294,7 +246,7 @@ end
 # justified by the fact that the smallest degree is achieved in maximal fixed case
 # follows from the fact that by fixing additional vars we don't increase the degree
 function max_fixed_to_sample(
-    F::AbstractDifferentiatedSystem,
+    F::AbstractDifferentiatedVariety,
     vars::AbstractArray{Variable},
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
@@ -305,70 +257,6 @@ function max_fixed_to_sample(
 
     end
 end
-
-abstract type AbstractSampledSystem <: AbstractDifferentiatedSystem end
-
-struct SampledSystem <: AbstractSampledSystem
-    system::DifferentiatedSystem
-    samples::Dict{FixedFreeVariables, FixedFreeSamples}
-    sample_generator::Union{Function, Nothing}
-end
-
-SampledSystem(
-    F::System,
-    sample_generator::Union{Function, Nothing}
-) = SampledSystem(DifferentiatedSystem(F), Dict(), sample_generator)
-SampledSystem(F::System) = SampledSystem(F, nothing)
-
-HC.System(F::SampledSystem) = System(F.system)
-
-unknowns(F::Union{DifferentiatedSystem, SampledSystem}) = unknowns(System(F))
-HC.parameters(F::Union{DifferentiatedSystem, SampledSystem}) = parameters(System(F))
-variables(F::Union{DifferentiatedSystem, SampledSystem}) = variables(System(F))
-nunknowns(F::Union{DifferentiatedSystem, SampledSystem}) = nunknowns(System(F))
-HC.nparameters(F::Union{DifferentiatedSystem, SampledSystem}) = nparameters(System(F))
-nvariables(F::Union{DifferentiatedSystem, SampledSystem}) = nvariables(System(F))
-HC.expressions(F::Union{DifferentiatedSystem, SampledSystem}) = expressions(System(F))
-
-HC.subs(
-    F::System,
-    substitutions::Pair...
-) = System(
-        subs(expressions(F), substitutions...);
-        variables=setdiff(variables(F), vcat(first.(substitutions)...))
-    )
-
-(F::SampledSystem)(x::AbstractVector) = System(F)(x)
-
-samples(
-    F::SampledSystem,
-    vars::FixedFreeVariables
-) = get(F.samples, vars, nothing)
-
-function nsamples(F::SampledSystem, vars::FixedFreeVariables)
-    s = samples(F, vars)
-    !isnothing(s) && return size(free(s), 2)
-    return 0
-end
-
-add_samples!(
-    F::SampledSystem,
-    vars::FixedFreeVariables,
-    s::FixedFreeSamples;
-    tol::Real=1e-10
-) = F.samples[vars] = isnothing(samples(F, vars)) ? s : hcat(samples(F, vars), s; tol=tol)
-
-function find_sample(F::SampledSystem; kwargs...)
-    vars = FixedFreeVariables(variables(F))
-    s = samples(F, vars)
-    if isnothing(s) && !isnothing(F.sample_generator)
-        s = F.sample_generator(vars=vars, nsamples=1)
-        return isnothing(s) ? find_sample(System(F); kwargs...) : free(s)[:]
-    end
-    return isnothing(s) ? find_sample(System(F); kwargs...) : free(s)[:,rand(1:nsamples(s))]
-end
-
-full_jacobian(F::SampledSystem) = full_jacobian(F.system)
 
 # Supposes that each Result contains only 1 (if SUCCESS) or 0 (if FAIL) solutions
 function extract_samples(
@@ -413,11 +301,25 @@ function extract_samples(
 end
 
 # TODO: add keyword arg for same fixed values?
+"""
+    sample(F::Union{SampledSystem, MapGraph}, vars::FixedFreeVariables; kwargs...)
+
+Returns samples for the given polynomial system `F` and variables `vars`. The return type
+is `FixedFreeSamples`.
+
+*Keyword arguments*:
+* `nsamples::Integer=1`: defines number of samples to compute
+* `start_point::Union{AbstractVector, Nothing}=nothing`: specifies the starting point of the variety
+  defined by `F` from which to start collecting other samples.
+* `tols::Tolerances=Tolerances()`: tolerances structure used for computations. Tolerances used 
+  in this method: `rank_atol`, 
+* `rand_method::Symbol=:rand_unit`: method for generating random samples.
+"""
 function sample(
-    F::AbstractDifferentiatedSystem,
-    vars::FixedFreeVariables=FixedFreeVariables(variables(F)),
-    x::Union{AbstractVector, Nothing}=nothing;
-    nsamples::Int=1,
+    F::AbstractDifferentiatedVariety,
+    vars::FixedFreeVariables;
+    nsamples::Integer=1,
+    start_point::Union{AbstractVector, Nothing}=nothing,
     tols::Tolerances=Tolerances(),
     rand_method::Symbol=:rand_unit
 )
@@ -455,17 +357,4 @@ function sample(
     ids_free = indexin(free(vars), variables(G)) # TODO: is there problem?
     free_samples = s[ids_free, :]
     return FixedFreeSamples(x_fixed, free_samples)
-end
-
-# TODO: add keyword arg for same fixed values?
-function sample!(
-    F::SampledSystem,
-    vars::FixedFreeVariables=FixedFreeVariables(variables(F)),
-    x::Union{AbstractVector, Nothing}=nothing;
-    nsamples::Int=1,
-    tols::Tolerances=Tolerances(),
-    rand_method::Symbol=:rand_unit
-)
-    s = sample(F, vars, x; nsamples=nsamples, tols=tols, rand_method=rand_method)
-    F.samples[vars] = s
 end

@@ -1,7 +1,8 @@
 export sparsify!,
     simplify_numbers,
     eye, a2p, p2a, xx,
-    num_mons, num_mons_upto
+    num_mons, num_mons_upto,
+    Tolerances
 
 a2p(M::AbstractMatrix{<:Number}) = [M; ones(eltype(M), 1, size(M, 2))]
 p2a(M::AbstractMatrix{<:Number}) = (M./M[end:end,:])[1:end-1,:]
@@ -123,4 +124,15 @@ phrase(i::Integer, word::String) = i == 1 ? "$(i) $(word)" : "$(i) $(word)s"
 function rand_unit(T::Type, dims...)
     A = randn(T, dims...)
     return A./norm.(A)
+end
+
+# TODO: add general_tol for everything else?
+@kwdef struct Tolerances
+    common_tol::Float64=1e-10
+    nullspace_atol::Float64=0
+    nullspace_rtol::Float64=0
+    rank_atol::Float64=0
+    rank_rtol::Float64=0
+    rref_tol::Float64=1e-5
+    sparsify_tol::Float64=1e-5
 end

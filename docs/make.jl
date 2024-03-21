@@ -19,10 +19,15 @@ makedocs(;
     ),
     pages=[
         "Introduction" => "index.md",
-        "Interpolation Basis" => "inter_basis.md",
+        "Common functionalities" => [
+            "Interpolation basis" => "inter_basis.md",
+            "Fixed-free interpolation" => "fixed_free.md"
+        ],
         "Functions on Algebraic Varieties" => [
-            "Fixed-free interpolation" => "variety/fixed_free.md"
-            "Scaling symmetries" => "variety/scalings.md"
+            "Representing algebraic varieties" => "on_varieties/varieties.md"
+            "Sampling algebraic varieties" => "on_varieties/sampling.md"
+            "Interpolation" => "on_varieties/interpolation.md"
+            # "Scaling symmetries" => "variety/scalings.md"
         ],
         "Functions on Affine Spaces" => [
 

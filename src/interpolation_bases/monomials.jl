@@ -1,10 +1,16 @@
 export multiexponents,
-    AbstractMonomialVector,
     MonomialVector,
     iterate,
     evaluate,
     to_classes
 
+"""
+    MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractMonomialVector
+"""
+mutable struct MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractMonomialVector
+    mexps::Vector{SparseVector{Tv,Ti}}
+    vars::Vector{Variable}
+end
 
 # Generates list of multiexponents of degree @degree in @nvars variables
 function multiexponents(; degree::Tv, nvars::Ti) where {Tv<:Integer,Ti<:Integer}
@@ -21,11 +27,6 @@ function multiexponents(; degree::Tv, nvars::Ti) where {Tv<:Integer,Ti<:Integer}
         end
     end
     return mexps
-end
-
-mutable struct MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractMonomialVector
-    mexps::Vector{SparseVector{Tv,Ti}}
-    vars::Vector{Variable}
 end
 
 function MonomialVector{Tv,Ti}(

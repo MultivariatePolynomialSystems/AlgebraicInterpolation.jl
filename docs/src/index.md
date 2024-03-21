@@ -1,14 +1,8 @@
-```@meta
-CurrentModule = MultivariateInterpolation
-```
+# Introduction
+MultivariateInterpolation.jl is a Julia package that provides methods for interpolating sparse and dense multivariate polynomial and rational functions from samples taken either from an algebraic variety or an affine space.
 
-# MultivariateInterpolation.jl
+## Quick start
 
-Documentation for [MultivariateInterpolation](https://github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl).
+TBW
 
-```@index
-```
-
-```@autodocs
-Modules = [MultivariateInterpolation]
-```
+## Contents
