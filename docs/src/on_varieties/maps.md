@@ -1,4 +1,4 @@
-# Maps defined on algebraic varieties
+# ExpressionMap
 
 ```@docs
 ExpressionMap

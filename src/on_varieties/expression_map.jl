@@ -161,7 +161,7 @@ end
 Returns `true` if ``\\varphi \\colon X \\dashrightarrow \\mathbb{C}^m`` is dominant, i.e. if
 
 ```math
-\\mathrm{dim}(\\mathrm{im}(X)) = m.
+\\mathrm{dim}(\\mathrm{im}(\\varphi)) = m.
 ```
 """
 is_dominant(

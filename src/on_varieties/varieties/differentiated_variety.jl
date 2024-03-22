@@ -5,7 +5,7 @@ export DifferentiatedVariety
     DifferentiatedVariety <: AbstractDifferentiatedVariety
 """
 struct DifferentiatedVariety <: AbstractDifferentiatedVariety
-    system::System
+    variety::AlgebraicVariety
     full_jacobian::Matrix{Expression}
 end
 

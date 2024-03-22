@@ -21,12 +21,12 @@ makedocs(;
         "Introduction" => "index.md",
         "Common functionalities" => [
             "Interpolation basis" => "inter_basis.md",
-            "Fixed-free interpolation" => "fixed_free.md"
+            "Fixed-free variables" => "fixed_free.md"
         ],
         "Functions on Algebraic Varieties" => [
-            "Representing algebraic varieties" => "on_varieties/varieties.md"
-            "Sampling algebraic varieties" => "on_varieties/sampling.md"
-            "Maps defined on algebraic varieties" => "on_varieties/maps.md"
+            "Algebraic varieties" => "on_varieties/varieties.md"
+            "ExpressionMap" => "on_varieties/maps.md"
+            "Sampling" => "on_varieties/sampling.md"
             "Interpolation" => "on_varieties/interpolation.md"
             # "Scaling symmetries" => "variety/scalings.md"
         ],

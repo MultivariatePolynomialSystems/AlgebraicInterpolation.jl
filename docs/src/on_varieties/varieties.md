@@ -1,4 +1,4 @@
-# Representing algebraic varieties
+# Algebraic varieties
 
 ## Abstract algebraic varieties
 

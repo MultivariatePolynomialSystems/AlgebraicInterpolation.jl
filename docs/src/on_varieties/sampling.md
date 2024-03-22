@@ -1,4 +1,4 @@
-# Sampling algebraic varieties
+# Sampling
 
 In this Julia package we partially deal with polynomial and rational function defined on algebraic varieties. These varieties are defined by multivariate polynomial systems. We use [`HomotopyContinuation.jl`](https://www.juliahomotopycontinuation.org/) to sample these algebraic varieties. The samples are later used for the interpolation. 
 
