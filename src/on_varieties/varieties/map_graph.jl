@@ -2,7 +2,7 @@ export MapGraph
 
 
 """
-    MapGraph{T <: ExpressionMap} <: AbstractSampledVariety
+    MapGraph{T<:ExpressionMap} <: AbstractSampledVariety
 """
 struct MapGraph{T<:ExpressionMap} <: AbstractSampledVariety
     map::T
