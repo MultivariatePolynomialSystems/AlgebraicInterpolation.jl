@@ -19,7 +19,7 @@ makedocs(;
     ),
     pages=[
         "Introduction" => "index.md",
-        "Common functionalities" => [
+        "Common interpolation techniques" => [
             "Interpolation basis" => "inter_basis.md",
             "Fixed-free interpolation" => "fixed_free.md"
         ],

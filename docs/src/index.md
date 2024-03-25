@@ -3,6 +3,9 @@ MultivariateInterpolation.jl is a Julia package that provides methods for interp
 
 ## Quick start
 
-TBW
+```@repl
+using MultivariateInterpolation
+@var R[1:3,1:3] t[1:3] E[1:3,1:3]
+```
 
 ## Contents
