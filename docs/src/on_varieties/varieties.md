@@ -8,6 +8,14 @@ AbstractDifferentiatedVariety
 AbstractSampledVariety
 ```
 
+```@repl
+1+1
+```
+
+```@example
+1+1
+```
+
 ## AffineSpace
 
 ```@docs

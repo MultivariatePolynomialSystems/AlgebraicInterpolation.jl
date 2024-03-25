@@ -21,7 +21,7 @@ makedocs(;
         "Introduction" => "index.md",
         "Common functionalities" => [
             "Interpolation basis" => "inter_basis.md",
-            "Fixed-free variables" => "fixed_free.md"
+            "Fixed-free interpolation" => "fixed_free.md"
         ],
         "Functions on Algebraic Varieties" => [
             "Algebraic varieties" => "on_varieties/varieties.md"
