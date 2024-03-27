@@ -1,10 +1,19 @@
 # Interpolation basis
 
-## Abstract interpolation bases
+Abstract type for interpolation basis is given by
 
 ```@docs
 AbstractInterpolationBasis
-AbstractMonomialVector
+```
+
+## Interface
+
+```@docs
+
+nelements
+iterate
+to_expressions
+evaluate
 ```
 
 ## MonomialVector
@@ -12,3 +21,5 @@ AbstractMonomialVector
 ```@docs
 MonomialVector
 ```
+
+## Methods

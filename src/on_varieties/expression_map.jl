@@ -118,7 +118,7 @@ domain_dimension(
     tols::Tolerances=Tolerances()
 ) = dimension(domain(φ), x; tols=tols)
 
-find_sample(domain::Vector{Variable}) = rand_unit(ComplexF64, length(domain))
+generate_sample(domain::Vector{Variable}) = rand_unit(ComplexF64, length(domain))
 
 """
     image_dimension(φ::ExpressionMap; kwargs...)
@@ -130,7 +130,7 @@ function image_dimension(
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
 ) where {T<:AbstractAlgebraicVariety}
-    x = isnothing(x) ? find_sample(domain(φ)) :  x
+    x = isnothing(x) ? generate_sample(domain(φ)) :  x
     if !isnothing(x)
         vars = domain_vars(φ)
         dφₓ = isnothing(φ.exprs_jacobian) ? nothing : evaluate(φ.exprs_jacobian[:,φ.domain_nonimage_vars], vars => x)

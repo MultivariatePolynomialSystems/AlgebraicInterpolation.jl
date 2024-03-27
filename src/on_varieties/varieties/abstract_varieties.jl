@@ -10,7 +10,6 @@ export AbstractAlgebraicVariety,
     finite_dominant_projection,
     sample,
     sample!,
-    add_samples!,
     samples
 
 
@@ -51,16 +50,13 @@ Returns the number of expressions of `X`.
 """
 nexpressions(X::AbstractAlgebraicVariety) = length(expressions(X))
 
-HC.System(X::AbstractAlgebraicVariety) = System(expressions(X); variables=variables(X))
-
 """
-    generate_sample(X::AbstractAlgebraicVariety; <keyword arguments>) -> Vector{ComplexF64}
+    generate_sample(X::AbstractAlgebraicVariety) -> Vector{ComplexF64}
 
 Generates a sample from `X`.
 """
-function generate_sample(X::AbstractAlgebraicVariety; kwargs...)
-    F = System(X)
-    return generate_sample(F; kwargs...)
+function generate_sample(X::AbstractAlgebraicVariety)
+    error("Not implemented")
 end
 
 """
@@ -161,18 +157,8 @@ Results in an error, if it is impossible or unreasonable to sample the given `va
 - `nsamples::Integer=1`: number of samples.
 - `start_point::Union{AbstractVector, Nothing}=nothing`: starting point for homotopy continuation.
 - `tols::Tolerances=Tolerances()`: tolerances for numerical computations.
-- `rand_method::Symbol=:rand_unit`: method for generating random samples.
 """
 function sample(X::AbstractAlgebraicVariety, vars::FixedFreeVariables; kwargs...)
-    error("Not implemented")
-end
-
-"""
-    add_samples!(X::AbstractAlgebraicVariety, s::FixedFreeSamples)
-
-Adds new samples `s` to `X`.
-"""
-function add_samples!(X::AbstractAlgebraicVariety, s::FixedFreeSamples)
     error("Not implemented")
 end
 
@@ -182,8 +168,7 @@ end
 Samples `X` in the given `vars` and updates `X` with these samples.
 """
 function sample!(X::AbstractAlgebraicVariety, vars::FixedFreeVariables; kwargs...)
-    s = sample(X, vars; kwargs...)
-    add_samples!(X, s)
+    error("Not implemented")
 end
 
 """

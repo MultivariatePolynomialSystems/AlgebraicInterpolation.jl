@@ -5,9 +5,9 @@ export multiexponents,
     to_classes
 
 """
-    MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractMonomialVector
+    MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractInterpolationBasis
 """
-mutable struct MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractMonomialVector
+mutable struct MonomialVector{Tv<:Integer,Ti<:Integer} <: AbstractInterpolationBasis
     mexps::Vector{SparseVector{Tv,Ti}}
     vars::Vector{Variable}
 end

@@ -6,14 +6,6 @@ The basic abstract type of algebraic varieties is given by
 AbstractAlgebraicVariety
 ```
 
-```@repl
-1+1
-```
-
-```@example
-1+1
-```
-
 ## AffineSpace
 
 ```@docs

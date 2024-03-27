@@ -3,7 +3,7 @@ export interpolate_constraints
 
 function polynomial_function(
     coeffs::AbstractVector{<:Number},
-    mons::AbstractMonomialVector;
+    mons::AbstractInterpolationBasis;
     logging::Bool=false
 )
     @assert length(coeffs) == length(mons)
@@ -14,7 +14,7 @@ end
 
 function polynomial_functions(
     coeffs::AbstractMatrix{<:Number},
-    mons::AbstractMonomialVector;
+    mons::AbstractInterpolationBasis;
     logging::Bool=false
 )
     return [polynomial_function(row, mons; logging=logging) for row in eachrow(coeffs)]

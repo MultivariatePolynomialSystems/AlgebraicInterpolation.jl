@@ -7,7 +7,6 @@ An alternative would be that a user provides a method that will generate samples
 ```@docs
 possible_to_sample
 sample
-add_samples!
 sample!
 samples
 ```
