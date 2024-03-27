@@ -1,11 +1,9 @@
 # Algebraic varieties
 
-## Abstract algebraic varieties
+The basic abstract type of algebraic varieties is given by
 
 ```@docs
 AbstractAlgebraicVariety
-AbstractDifferentiatedVariety
-AbstractSampledVariety
 ```
 
 ```@repl
@@ -28,20 +26,22 @@ AffineSpace
 AlgebraicVariety
 ```
 
-## DifferentiatedVariety
-
-```@docs
-DifferentiatedVariety
-```
-
-## SampledVariety
-
-```@docs
-SampledVariety
-```
-
 ## MapGraph
 
 ```@docs
 MapGraph
+```
+
+## Methods
+
+```@docs
+variables
+nvariables
+expressions
+nexpressions
+generate_sample
+jacobian
+tangent_space
+dimension
+finite_dominant_projection
 ```

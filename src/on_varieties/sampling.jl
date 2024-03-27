@@ -32,55 +32,12 @@ Base.getindex(
     vars::Vector{Variable}
 ) = [eval.eval[v] for v in vars]
 
-# WARNING: redefine 'variables' from HC; this definition is IMHO semantically more correct
-unknowns(F::System) = HC.variables(F)
-variables(F::System) = vcat(unknowns(F), parameters(F))
-nunknowns(F::System) = length(unknowns(F))
-nvariables(F::System) = length(variables(F))
-
-function find_sample(F::System; kwargs...)
+function generate_sample(F::System; kwargs...)
     pair = HC.find_start_pair(F; kwargs...)
     isnothing(pair) && error("Couldn't generate a random sample of the system")
     x, p = pair
     p = isnothing(p) ? ComplexF64[] : p
     return vcat(x, p)
-end
-
-full_jacobian(F::System) = differentiate(expressions(F), variables(F))
-
-
-
-
-
-
-
-dimension(
-    F::System,
-    x::Union{AbstractVector, Nothing}=nothing;
-    tols::Tolerances=Tolerances()
-) = dimension(DifferentiatedVariety(F), x; tols=tols)
-
-function finite_dominant_projection(
-    F::AbstractDifferentiatedVariety,
-    x::Union{AbstractVector, Nothing}=nothing;
-    tols::Tolerances=Tolerances()
-)
-    x = isnothing(x) ? find_sample(F) : x
-    proj_vars = Int[]
-    dom_dim = dimension(F, x; tols=tols)
-    im_dim = 0
-    for i in 1:nvariables(F)
-        push!(proj_vars, i)
-        φ = ExpressionMap(F, proj_vars)
-        im_dim_curr = image_dimension(φ, x; tols=tols)
-        im_dim_curr == dom_dim && return φ
-        if im_dim_curr > im_dim
-            im_dim += 1
-        else
-            pop!(proj_vars)
-        end
-    end
-    error("Couldn't find a finite dominant projection")
 end
 
 function finite_dominant_projection(
@@ -95,7 +52,7 @@ function finite_dominant_projection(
 end
 
 function reasonable_to_sample(
-    F::AbstractDifferentiatedVariety,
+    F::AbstractAlgebraicVariety,
     vars::FixedFreeVariables,
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
@@ -112,10 +69,10 @@ function reasonable_to_sample(
 end
 
 """
-    possible_to_sample(X::AbstractDifferentiatedVariety, vars::FixedFreeVariables; kwargs...)
+    possible_to_sample(X::AbstractAlgebraicVariety, vars::FixedFreeVariables; kwargs...)
 
 Returns `false` if there exists a free variable in `vars` that is determined in 
-finite many ways by all fixed variables in `vars`. 
+finite many ways by all fixed variables in `vars`.
 
 Throws a WARNING (for keyword argument `logging=true`) if there are 
 no constraints in free variables after fixing all the fixed ones.
@@ -127,7 +84,7 @@ in this method: same as in [`image_dimension`](@ref).
 * `logging::Bool=true`
 """
 function possible_to_sample(
-    F::AbstractDifferentiatedVariety,
+    F::AbstractAlgebraicVariety,
     vars::FixedFreeVariables,
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances(),
@@ -171,7 +128,7 @@ end
 # justified by the fact that the smallest degree is achieved in maximal fixed case
 # follows from the fact that by fixing additional vars we don't increase the degree
 function max_fixed_to_sample(
-    F::AbstractDifferentiatedVariety,
+    F::AbstractAlgebraicVariety,
     vars::AbstractArray{Variable},
     x::Union{AbstractVector, Nothing}=nothing;
     tols::Tolerances=Tolerances()
@@ -226,22 +183,8 @@ function extract_samples(
 end
 
 # TODO: add keyword arg for same fixed values?
-"""
-    sample(F::Union{SampledSystem, MapGraph}, vars::FixedFreeVariables; kwargs...)
-
-Returns samples for the given polynomial system `F` and variables `vars`. The return type
-is `FixedFreeSamples`.
-
-*Keyword arguments*:
-* `nsamples::Integer=1`: defines number of samples to compute
-* `start_point::Union{AbstractVector, Nothing}=nothing`: specifies the starting point of the variety
-  defined by `F` from which to start collecting other samples.
-* `tols::Tolerances=Tolerances()`: tolerances structure used for computations. Tolerances used 
-  in this method: `rank_atol`, 
-* `rand_method::Symbol=:rand_unit`: method for generating random samples.
-"""
 function sample(
-    F::AbstractDifferentiatedVariety,
+    F::AlgebraicVariety,
     vars::FixedFreeVariables;
     nsamples::Integer=1,
     start_point::Union{AbstractVector, Nothing}=nothing,

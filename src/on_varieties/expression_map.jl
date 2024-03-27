@@ -23,7 +23,7 @@ struct ExpressionMap{T<:AbstractAlgebraicVariety}
 end
 
 ExpressionMap(
-    domain::AbstractDifferentiatedVariety,
+    domain::AbstractAlgebraicVariety,
     expr_vars::Vector{Variable},
     exprs::Vector{Expression},
     domain_image_vars::Vector{Int}
@@ -62,7 +62,7 @@ ExpressionMap(
 ) = ExpressionMap(domain, Variable[], Expression[], domain_image_vars)
 
 ExpressionMap(
-    domain::AbstractDifferentiatedVariety,
+    domain::AbstractAlgebraicVariety,
     domain_image_vars::AbstractArray{Variable}
 ) = ExpressionMap(domain, [findfirst(var->var==v, variables(domain)) for v in domain_image_vars[:]])
 

@@ -21,7 +21,7 @@ function polynomial_functions(
 end
 
 function interpolate_constraints(
-    F::AbstractDifferentiatedVariety,
+    F::AbstractAlgebraicVariety,
     vars::FixedFreeVariables;
     degree::Integer,
     start_point::Union{AbstractVector, Nothing}=nothing,

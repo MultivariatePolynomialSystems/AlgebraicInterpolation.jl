@@ -2,9 +2,9 @@ export MapGraph
 
 
 """
-    MapGraph{T<:ExpressionMap} <: AbstractSampledVariety
+    MapGraph{T<:ExpressionMap} <: AbstractAlgebraicVariety
 """
-struct MapGraph{T<:ExpressionMap} <: AbstractSampledVariety
+struct MapGraph{T<:ExpressionMap} <: AbstractAlgebraicVariety
     map::T
     samples::Dict{FixedFreeVariables, FixedFreeSamples}
 end
