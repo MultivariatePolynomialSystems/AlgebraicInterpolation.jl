@@ -17,11 +17,11 @@ using Base.Iterators: flatten
 
 include("utils.jl")
 
-include("interpolation_bases/abstract_bases.jl")
+include("interpolation_bases/abstract_basis.jl")
 include("interpolation_bases/monomials.jl")
 include("fixed_free.jl")
 
-include("on_varieties/varieties/abstract_varieties.jl")
+include("on_varieties/varieties/abstract_variety.jl")
 include("on_varieties/varieties/affine_space.jl")
 include("on_varieties/varieties/algebraic_variety.jl")
 
