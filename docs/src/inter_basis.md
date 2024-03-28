@@ -11,7 +11,6 @@ AbstractInterpolationBasis
 ```@docs
 
 nelements
-iterate
 to_expressions
 evaluate
 ```

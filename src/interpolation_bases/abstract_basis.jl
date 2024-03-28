@@ -21,15 +21,6 @@ function nelements(B::AbstractInterpolationBasis)
 end
 
 """
-    Base.iterate(B::AbstractInterpolationBasis, state=nothing)
-
-TBW
-"""
-function Base.iterate(B::AbstractInterpolationBasis, state=nothing)
-    error("Not implemented")
-end
-
-"""
     to_expressions(B::AbstractInterpolationBasis) -> AbstractVector{Expression}
 
 Return the elements of `B` converted to [`Expression`]($(EXPRESSION_LINK))s.

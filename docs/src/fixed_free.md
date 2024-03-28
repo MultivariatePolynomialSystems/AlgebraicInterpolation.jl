@@ -4,6 +4,11 @@
 
 ```@docs
 FixedFreeVariables
+fixed(::FixedFreeVariables)
+free(::FixedFreeVariables)
+nfixed(::FixedFreeVariables)
+nfree(::FixedFreeVariables)
+variables(::FixedFreeVariables)
 ```
 
 ## FixedFreeSamples

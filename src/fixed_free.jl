@@ -81,10 +81,39 @@ Base.hash(
     u::UInt64
 ) = hash(vars.fixed, hash(vars.free, u))
 
+"""
+    fixed(vars::FixedFreeVariables)
+
+TBW
+"""
 fixed(vars::FixedFreeVariables) = vars.fixed
+
+"""
+    free(vars::FixedFreeVariables)
+
+TBW
+"""
 free(vars::FixedFreeVariables) = vars.free
+
+"""
+    nfixed(vars::FixedFreeVariables)
+
+TBW
+"""
 nfixed(vars::FixedFreeVariables) = length(vars.fixed)
+
+"""
+    nfree(vars::FixedFreeVariables)
+
+TBW
+"""
 nfree(vars::FixedFreeVariables) = length(vars.free)
+
+"""
+    variables(vars::FixedFreeVariables)
+
+TBW
+"""
 variables(vars::FixedFreeVariables) = vcat(vars.fixed, vars.free)
 
 function Base.show(io::IO, vars::FixedFreeVariables)
