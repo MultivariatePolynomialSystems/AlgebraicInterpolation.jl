@@ -8,6 +8,46 @@ export FixedFreeVariables,
 
 """
     FixedFreeVariables
+
+Data type for creating fixed and free variables used for interpolation.
+
+```julia
+FixedFreeVariables(fixed::Vector{Variable}, free::Vector{Variable})
+FixedFreeVariables(
+    fixed::Union{Variable, AbstractArray},
+    free::Union{Variable, AbstractArray}
+)
+FixedFreeVariables(free::Union{Variable, AbstractArray})
+```
+
+# Examples
+```jldoctest
+julia> @var x y[1:2] z[1:2,1:3]
+(x, Variable[y₁, y₂], Variable[z₁₋₁ z₁₋₂ z₁₋₃; z₂₋₁ z₂₋₂ z₂₋₃])
+
+julia> FixedFreeVariables(x)
+FixedFreeVariables: 0 fixed, 1 free
+ fixed: 
+ free: x
+
+julia> FixedFreeVariables([x, y])
+FixedFreeVariables: 0 fixed, 3 free
+ fixed: 
+ free: x, y₁, y₂
+
+julia> FixedFreeVariables([x, y], z)
+FixedFreeVariables: 3 fixed, 6 free
+ fixed: x, y₁, y₂
+ free: z₁₋₁, z₂₋₁, z₁₋₂, z₂₋₂, z₁₋₃, z₂₋₃
+
+julia> FixedFreeVariables([x, y], [y, z])
+ERROR: Nontrivial intersection of fixed and free variables
+[...]
+
+julia> FixedFreeVariables([x, y, z], [])
+ERROR: Array of free variables must be nonempty
+[...]
+```
 """
 struct FixedFreeVariables
     fixed::Vector{Variable}
@@ -28,7 +68,7 @@ function FixedFreeVariables(
     fixed::Union{Variable, AbstractArray},
     free::Union{Variable, AbstractArray}
 )
-    return FixedFreeVariables(collect(flatten(fixed)), collect(flatten(free)))
+    return FixedFreeVariables(Variable.(collect(flatten(fixed))), Variable.(collect(flatten(free))))
 end
 FixedFreeVariables(free::Union{Variable, AbstractArray}) = FixedFreeVariables(Variable[], free)
 

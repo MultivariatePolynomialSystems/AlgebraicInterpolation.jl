@@ -16,8 +16,8 @@ to_expressions
 evaluate
 ```
 
-## MonomialVector
+## MonomialBasis
 
 ```@docs
-MonomialVector
+MonomialBasis
 ```

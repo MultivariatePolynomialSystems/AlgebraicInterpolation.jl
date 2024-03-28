@@ -1,6 +1,6 @@
 # Algebraic varieties
 
-The basic abstract type of algebraic varieties is given by
+Abstract type for algebraic varieties is given by
 
 ```@docs
 AbstractAlgebraicVariety
