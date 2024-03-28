@@ -21,5 +21,3 @@ evaluate
 ```@docs
 MonomialVector
 ```
-
-## Methods

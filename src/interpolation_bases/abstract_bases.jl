@@ -14,7 +14,7 @@ abstract type AbstractInterpolationBasis end
 """
     nelements(B::AbstractInterpolationBasis) -> Integer
 
-Returns the number of elements in `B`.
+Return the number of elements in `B`.
 """
 function nelements(B::AbstractInterpolationBasis)
     error("Not implemented")
@@ -30,9 +30,9 @@ function Base.iterate(B::AbstractInterpolationBasis, state=nothing)
 end
 
 """
-    to_expressions(B::AbstractInterpolationBasis) -> Vector{Expression}
+    to_expressions(B::AbstractInterpolationBasis) -> AbstractVector{Expression}
 
-Returns the elements of `B` converted to [`Expression`]($(EXPRESSION_LINK))s.
+Return the elements of `B` converted to [`Expression`]($(EXPRESSION_LINK))s.
 """
 function to_expressions(B::AbstractInterpolationBasis)
     error("Not implemented")
