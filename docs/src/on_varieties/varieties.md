@@ -27,8 +27,8 @@ MapGraph
 ## Methods
 
 ```@docs
-variables
-nvariables
+variables(::AbstractAlgebraicVariety)
+nvariables(::AbstractAlgebraicVariety)
 expressions
 nexpressions
 generate_sample

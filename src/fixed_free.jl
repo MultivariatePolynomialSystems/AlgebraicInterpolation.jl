@@ -116,6 +116,13 @@ TBW
 """
 variables(vars::FixedFreeVariables) = vcat(vars.fixed, vars.free)
 
+"""
+    nvariables(vars::FixedFreeVariables)
+
+TBW
+"""
+nvariables(vars::FixedFreeVariables) = nfixed(vars) + nfree(vars)
+
 function Base.show(io::IO, vars::FixedFreeVariables)
     println(
         io,
@@ -142,8 +149,25 @@ FixedFreeSamples(
     nsamples::Int
 ) = FixedFreeSamples(zeros(ComplexF64, nfixed), zeros(ComplexF64, nfree, nsamples))
 
+"""
+    fixed(s::FixedFreeSamples)
+
+TBW
+"""
 fixed(s::FixedFreeSamples) = s.fixed
+
+"""
+    free(s::FixedFreeSamples)
+
+TBW
+"""
 free(s::FixedFreeSamples) = s.free
+
+"""
+    nsamples(s::FixedFreeSamples)
+
+TBW
+"""
 nsamples(s::FixedFreeSamples) = size(s.free, 2)
 
 function Base.hcat(s₁::FixedFreeSamples, s₂::FixedFreeSamples; tol::Real=1e-10) # TODO: make tol optional?
