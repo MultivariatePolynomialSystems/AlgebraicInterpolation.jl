@@ -84,42 +84,42 @@ Base.hash(
 """
     fixed(vars::FixedFreeVariables)
 
-TBW
+Return the fixed variables in `vars`.
 """
 fixed(vars::FixedFreeVariables) = vars.fixed
 
 """
     free(vars::FixedFreeVariables)
 
-TBW
+Return the free variables in `vars`.
 """
 free(vars::FixedFreeVariables) = vars.free
 
 """
     nfixed(vars::FixedFreeVariables)
 
-TBW
+Return the number of fixed variables in `vars`.
 """
 nfixed(vars::FixedFreeVariables) = length(vars.fixed)
 
 """
     nfree(vars::FixedFreeVariables)
 
-TBW
+Return the number of free variables in `vars`.
 """
 nfree(vars::FixedFreeVariables) = length(vars.free)
 
 """
     variables(vars::FixedFreeVariables)
 
-TBW
+Return all the variables in `vars`.
 """
 variables(vars::FixedFreeVariables) = vcat(vars.fixed, vars.free)
 
 """
     nvariables(vars::FixedFreeVariables)
 
-TBW
+Return the number of all the variables in `vars`.
 """
 nvariables(vars::FixedFreeVariables) = nfixed(vars) + nfree(vars)
 
@@ -137,6 +137,15 @@ end
 
 """
     FixedFreeSamples
+
+Data type contains samples from a variety of some [`FixedFreeVariables`](@ref).
+
+```julia
+FixedFreeSamples(fixed::Vector{ComplexF64}, free::Matrix{ComplexF64})
+```
+
+# Examples
+
 """
 struct FixedFreeSamples
     fixed::Vector{ComplexF64}
@@ -152,21 +161,21 @@ FixedFreeSamples(
 """
     fixed(s::FixedFreeSamples)
 
-TBW
+Return the fixed samples in `s`.
 """
 fixed(s::FixedFreeSamples) = s.fixed
 
 """
     free(s::FixedFreeSamples)
 
-TBW
+Return the free samples in `s`.
 """
 free(s::FixedFreeSamples) = s.free
 
 """
-    nsamples(s::FixedFreeSamples)
+    nsamples(s::FixedFreeSamples) -> Int
 
-TBW
+Return the number of samples in `s`.
 """
 nsamples(s::FixedFreeSamples) = size(s.free, 2)
 
