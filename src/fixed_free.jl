@@ -82,42 +82,42 @@ Base.hash(
 ) = hash(vars.fixed, hash(vars.free, u))
 
 """
-    fixed(vars::FixedFreeVariables)
+    fixed(vars::FixedFreeVariables) -> Vector{Variable}
 
 Return the fixed variables in `vars`.
 """
 fixed(vars::FixedFreeVariables) = vars.fixed
 
 """
-    free(vars::FixedFreeVariables)
+    free(vars::FixedFreeVariables) -> Vector{Variable}
 
 Return the free variables in `vars`.
 """
 free(vars::FixedFreeVariables) = vars.free
 
 """
-    nfixed(vars::FixedFreeVariables)
+    nfixed(vars::FixedFreeVariables) -> Int
 
 Return the number of fixed variables in `vars`.
 """
 nfixed(vars::FixedFreeVariables) = length(vars.fixed)
 
 """
-    nfree(vars::FixedFreeVariables)
+    nfree(vars::FixedFreeVariables) -> Int
 
 Return the number of free variables in `vars`.
 """
 nfree(vars::FixedFreeVariables) = length(vars.free)
 
 """
-    variables(vars::FixedFreeVariables)
+    variables(vars::FixedFreeVariables) -> Vector{Variable}
 
 Return all the variables in `vars`.
 """
 variables(vars::FixedFreeVariables) = vcat(vars.fixed, vars.free)
 
 """
-    nvariables(vars::FixedFreeVariables)
+    nvariables(vars::FixedFreeVariables) -> Int
 
 Return the number of all the variables in `vars`.
 """
@@ -159,14 +159,14 @@ FixedFreeSamples(
 ) = FixedFreeSamples(zeros(ComplexF64, nfixed), zeros(ComplexF64, nfree, nsamples))
 
 """
-    fixed(s::FixedFreeSamples)
+    fixed(s::FixedFreeSamples) -> Vector{ComplexF64}
 
 Return the fixed samples in `s`.
 """
 fixed(s::FixedFreeSamples) = s.fixed
 
 """
-    free(s::FixedFreeSamples)
+    free(s::FixedFreeSamples) -> Matrix{ComplexF64}
 
 Return the free samples in `s`.
 """
