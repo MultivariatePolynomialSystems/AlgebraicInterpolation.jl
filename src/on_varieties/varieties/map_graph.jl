@@ -3,6 +3,37 @@ export MapGraph
 
 """
     MapGraph{T<:ExpressionMap} <: AbstractAlgebraicVariety
+
+An [`AbstractAlgebraicVariety`](@ref) that represents a graph 
+``\\Gamma = \\{(x, \\varphi(x)) \\;|\\; x \\in X\\}`` of an 
+[`ExpressionMap`](@ref) ``\\varphi \\colon X \\dashrightarrow \\mathbb{C}^m``.
+
+# Constructors
+```julia
+MapGraph(φ::ExpressionMap)
+```
+
+# Examples
+```jldoctest
+julia> @var R[1:3,1:3] t[1:3] E[1:3,1:3]
+(Variable[R₁₋₁ R₁₋₂ R₁₋₃; R₂₋₁ R₂₋₂ R₂₋₃; R₃₋₁ R₃₋₂ R₃₋₃], Variable[t₁, t₂, t₃], Variable[E₁₋₁ E₁₋₂ E₁₋₃; E₂₋₁ E₂₋₂ E₂₋₃; E₃₋₁ E₃₋₂ E₃₋₃])
+
+julia> X = AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t])
+AlgebraicVariety X ⊂ ℂ¹²
+ variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
+ expressions: 
+
+julia> tₓ = [0 -t[3] t[2]; t[3] 0 -t[1]; -t[2] t[1] 0]
+3×3 Matrix{Expression}:
+   0  -t₃   t₂
+  t₃    0  -t₁
+ -t₂   t₁    0
+
+julia> Γ = MapGraph(ExpressionMap(X, E, tₓ*R))
+MapGraph: Γ ⊂ ℂ¹² × ℂ⁹
+ domain:
+ map:
+```
 """
 struct MapGraph{T<:ExpressionMap} <: AbstractAlgebraicVariety
     map::T

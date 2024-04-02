@@ -92,7 +92,7 @@ tangent_space(
 ) = nullspace(jacobian(X, x); atol=tols.nullspace_atol)[var_ids, :]
 
 """
-    dimension(X::AbstractAlgebraicVariety; <keyword arguments>)
+    dimension(X::AbstractAlgebraicVariety; <keyword arguments>) -> Int
 
 Computes the dimension of `X`.
 
@@ -163,7 +163,7 @@ function sample(X::AbstractAlgebraicVariety, vars::FixedFreeVariables; kwargs...
 end
 
 """
-    sample!(X::AbstractAlgebraicVariety, vars::FixedFreeSamples; <keyword arguments>)
+    sample!(X::AbstractAlgebraicVariety, vars::FixedFreeSamples; <keyword arguments>) -> FixedFreeSamples
 
 Samples `X` in the given `vars` and updates `X` with these samples.
 """

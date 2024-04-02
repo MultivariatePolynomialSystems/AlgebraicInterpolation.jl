@@ -70,7 +70,7 @@ function FixedFreeVariables(
 )
     return FixedFreeVariables(Variable.(collect(flatten(fixed))), Variable.(collect(flatten(free))))
 end
-FixedFreeVariables(free::Union{Variable, AbstractArray}) = FixedFreeVariables(Variable[], free)
+FixedFreeVariables(free::Union{Variable, AbstractArray}) = FixedFreeVariables([], free)
 
 function Base.:(==)(v₁::FixedFreeVariables, v₂::FixedFreeVariables)
     return v₁.fixed == v₂.fixed && v₁.free == v₂.free
