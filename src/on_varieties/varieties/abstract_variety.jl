@@ -288,7 +288,7 @@ end
 Returns a finite dominant projection from `X` to an affine space.
 
 # Keyword arguments
-- `sample::Union{AbstractVector, Nothing}=nothing`: point that belongs to `X`.
+- `sample::Union{AbstractVector{<:Number}, Nothing}=nothing`: point that belongs to `X`.
 - `tols::Tolerances=Tolerances()`: tolerances for numerical computations.
 
 # Examples

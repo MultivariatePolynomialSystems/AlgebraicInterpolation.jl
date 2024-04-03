@@ -16,58 +16,37 @@ export ExpressionMap,
 A data type that represents a rational map 
 ``\\varphi \\colon X \\dashrightarrow \\mathbb{C}^m``.
 
-# Constructors
+# Constructor
 ```julia
 ExpressionMap(
-    domain::AbstractAlgebraicVariety,
-    vars::AbstractArray,
-    exprs::AbstractArray
-)
-ExpressionMap(
-    domain::AbstractAlgebraicVariety,
-    vars::AbstractArray
+    domain::AbstractAlgebraicVariety;
+    expressions::Pair{<:AbstractArray, <:AbstractArray}=Pair(Variable[], Expression[]),
+    projection::AbstractArray=Variable[]
 )
 ```
 
 # Examples
 ```jldoctest
-julia> @var R[1:3,1:3] t[1:3] E[1:3,1:3]
-(Variable[R₁₋₁ R₁₋₂ R₁₋₃; R₂₋₁ R₂₋₂ R₂₋₃; R₃₋₁ R₃₋₂ R₃₋₃], Variable[t₁, t₂, t₃], Variable[E₁₋₁ E₁₋₂ E₁₋₃; E₂₋₁ E₂₋₂ E₂₋₃; E₃₋₁ E₃₋₂ E₃₋₃])
+julia> @var R[1:2,1:2] t[1:2] s[1:2]
+(Variable[R₁₋₁ R₁₋₂; R₂₋₁ R₂₋₂], Variable[t₁, t₂], Variable[s₁, s₂])
 
 julia> X = AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t]);
 
-julia> tₓ = [0 -t[3] t[2]; t[3] 0 -t[1]; -t[2] t[1] 0]
-3×3 Matrix{Expression}:
-   0  -t₃   t₂
-  t₃    0  -t₁
- -t₂   t₁    0
-
-julia> φ = ExpressionMap(X, E, tₓ*R)
-ExpressionMap: ℂ¹² ⊇ X - - > ℂ⁹
+julia> φ = ExpressionMap(X; expressions=Pair(s, R*t), projection=t)
+ExpressionMap: ℂ⁶ ⊇ X - - > ℂ⁴
  domain:
-  AlgebraicVariety X ⊂ ℂ¹²
-   12 variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
-   10 expressions:
-    -1 + R₁₋₁^2 + R₂₋₁^2 + R₃₋₁^2
-    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
-    R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
-    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
-    -1 + R₁₋₂^2 + R₂₋₂^2 + R₃₋₂^2
-    R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
-    R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
-    R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
-    -1 + R₁₋₃^2 + R₂₋₃^2 + R₃₋₃^2
-    -1 + (R₁₋₂*R₂₋₃ - R₁₋₃*R₂₋₂)*R₃₋₁ - (R₁₋₂*R₃₋₃ - R₁₋₃*R₃₋₂)*R₂₋₁ + (-R₃₋₂*R₂₋₃ + R₃₋₃*R₂₋₂)*R₁₋₁
+  AlgebraicVariety X ⊂ ℂ⁶
+   6 variables: R₁₋₁, R₂₋₁, R₁₋₂, R₂₋₂, t₁, t₂
+   5 expressions: 
+    -1 + R₁₋₁^2 + R₂₋₁^2
+    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+    -1 + R₁₋₂^2 + R₂₋₂^2
+    -1 + R₁₋₁*R₂₋₂ - R₁₋₂*R₂₋₁
  action:
-  E₁₋₁ = t₂*R₃₋₁ - t₃*R₂₋₁
-  E₂₋₁ = -t₁*R₃₋₁ + t₃*R₁₋₁
-  E₃₋₁ = t₁*R₂₋₁ - t₂*R₁₋₁
-  E₁₋₂ = t₂*R₃₋₂ - t₃*R₂₋₂
-  E₂₋₂ = -t₁*R₃₋₂ + t₃*R₁₋₂
-  E₃₋₂ = t₁*R₂₋₂ - t₂*R₁₋₂
-  E₁₋₃ = t₂*R₃₋₃ - t₃*R₂₋₃
-  E₂₋₃ = -t₁*R₃₋₃ + t₃*R₁₋₃
-  E₃₋₃ = t₁*R₂₋₃ - t₂*R₁₋₃
+  s₁ = t₁*R₁₋₁ + t₂*R₁₋₂
+  s₂ = t₁*R₂₋₁ + t₂*R₂₋₂
+  projection to t₁, t₂
 ```
 """
 struct ExpressionMap{T<:AbstractAlgebraicVariety}
@@ -94,27 +73,15 @@ ExpressionMap(
     )
 
 function ExpressionMap(
-    domain::AbstractAlgebraicVariety,
-    expr_vars::AbstractArray,
-    exprs::AbstractArray
+    domain::AbstractAlgebraicVariety;
+    expressions::Pair{<:AbstractArray, <:AbstractArray}=Pair(Variable[], Expression[]),
+    projection::AbstractArray=Variable[]
 )
-    expr_vars = Variable.(collect(flatten(expr_vars)))
-    exprs = Expression.(collect(flatten(exprs)))
-    return ExpressionMap(domain, expr_vars, exprs, Int[])
-end
-
-ExpressionMap(
-    domain::AbstractAlgebraicVariety,
-    domain_image_vars::Vector{Int}
-) = ExpressionMap(domain, Variable[], Expression[], domain_image_vars)
-
-function ExpressionMap(
-    domain::AbstractAlgebraicVariety,
-    domain_image_vars::AbstractArray
-)
-    domain_image_vars = Variable.(collect(flatten(domain_image_vars)))
-    domain_image_ids = [findfirst(var->var==v, variables(domain)) for v in domain_image_vars]
-    return ExpressionMap(domain, domain_image_ids)
+    expr_vars = Variable.(collect(flatten(first(expressions))))
+    exprs = Expression.(collect(flatten(last(expressions))))
+    dom_im_vars = Variable.(collect(flatten(projection)))
+    dom_im_ids = Int.([findfirst(var->var==v, variables(domain)) for v in dom_im_vars])
+    return ExpressionMap(domain, expr_vars, exprs, dom_im_ids)
 end
 
 domain(φ::ExpressionMap) = φ.domain
@@ -169,29 +136,39 @@ end
 Base.show(io::IO, φ::ExpressionMap) = show(io, φ, "")
 
 """
-    domain_dimension(φ::ExpressionMap; kwargs...)
+    domain_dimension(φ::ExpressionMap; <keyword_arguments>) -> Int
 
-Computes the dimension of the domain of ``\\varphi``.
+Compute the dimension of the domain of ``\\varphi``.
+
+# Examples
+```julia-repl
+julia> domain_dimension(φ)
+3
+```
 """
 domain_dimension(
-    φ::ExpressionMap,
-    x::Union{AbstractVector, Nothing}=nothing;
+    φ::ExpressionMap;
+    domain_sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances()
-) = dimension(domain(φ), x; tols=tols)
-
-generate_sample(domain::Vector{Variable}) = rand_unit(ComplexF64, length(domain))
+) = dimension(domain(φ); sample=domain_sample, tols=tols)
 
 """
-    image_dimension(φ::ExpressionMap; kwargs...)
+    image_dimension(φ::ExpressionMap; <keyword_arguments>) -> Int
 
-Computes the dimension of the image of ``\\varphi``.
+Compute the dimension of the image of ``\\varphi``.
+
+# Examples
+```julia-repl
+julia> image_dimension(φ)
+3
+```
 """
 function image_dimension(
-    φ::ExpressionMap{T},
-    x::Union{AbstractVector, Nothing}=nothing;
+    φ::ExpressionMap{T};
+    domain_sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances()
 ) where {T<:AbstractAlgebraicVariety}
-    x = isnothing(x) ? generate_sample(domain(φ)) :  x
+    x = isnothing(domain_sample) ? generate_sample(domain(φ)) :  domain_sample
     if !isnothing(x)
         vars = domain_vars(φ)
         dφₓ = isnothing(φ.exprs_jacobian) ? nothing : evaluate(φ.exprs_jacobian[:,φ.domain_nonimage_vars], vars => x)
@@ -217,17 +194,23 @@ end
 
 
 """
-    is_dominant(φ::ExpressionMap; kwargs...)
+    is_dominant(φ::ExpressionMap; <keyword_arguments>)
 
-Returns `true` if ``\\varphi \\colon X \\dashrightarrow \\mathbb{C}^m`` is dominant, i.e. if
+Return `true` if ``\\varphi \\colon X \\dashrightarrow \\mathbb{C}^m`` is dominant, i.e. if
 
 ```math
 \\mathrm{dim}(\\mathrm{im}(\\varphi)) = m.
 ```
+
+# Examples
+```julia-repl
+julia> is_dominant(φ)
+false
+```
 """
 is_dominant(
-    φ::ExpressionMap,
-    x::Union{AbstractVector, Nothing}=nothing;
+    φ::ExpressionMap;
+    domain_sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances()
-) = image_dimension(φ, x; tols=tols) == nimage_vars(φ)
+) = image_dimension(φ; domain_sample=domain_sample, tols=tols) == nimage_vars(φ)
 

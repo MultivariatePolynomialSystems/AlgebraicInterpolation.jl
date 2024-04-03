@@ -8,7 +8,7 @@ An [`AbstractAlgebraicVariety`](@ref) that represents a graph
 ``\\Gamma = \\{(x, \\varphi(x)) \\;|\\; x \\in X\\}`` of an 
 [`ExpressionMap`](@ref) ``\\varphi \\colon X \\dashrightarrow \\mathbb{C}^m``.
 
-# Constructors
+# Constructor
 ```julia
 MapGraph(φ::ExpressionMap)
 ```
@@ -20,7 +20,7 @@ julia> @var R[1:2,1:2] t[1:2] s[1:2]
 
 julia> X = AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t]);
 
-julia> Γ = MapGraph(ExpressionMap(X, s, R*t))
+julia> Γ = MapGraph(ExpressionMap(X, expressions=Pair(s, R*t)))
 MapGraph Γ ⊂ ℂ⁶ × ℂ²
  domain part:
   AlgebraicVariety X ⊂ ℂ⁶
