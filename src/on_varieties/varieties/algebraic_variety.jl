@@ -29,8 +29,18 @@ julia> @var R[1:3,1:3] t[1:3]
 
 julia> AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t])
 AlgebraicVariety X ⊂ ℂ¹²
- variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
- expressions:
+ 12 variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
+ 10 expressions:
+  -1 + R₁₋₁^2 + R₂₋₁^2 + R₃₋₁^2
+  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
+  R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
+  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
+  -1 + R₁₋₂^2 + R₂₋₂^2 + R₃₋₂^2
+  R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
+  R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
+  R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
+  -1 + R₁₋₃^2 + R₂₋₃^2 + R₃₋₃^2
+  -1 + (R₁₋₂*R₂₋₃ - R₁₋₃*R₂₋₂)*R₃₋₁ - (R₁₋₂*R₃₋₃ - R₁₋₃*R₃₋₂)*R₂₋₁ + (-R₃₋₂*R₂₋₃ + R₃₋₃*R₂₋₂)*R₁₋₁
 ```
 """
 struct AlgebraicVariety <: AbstractAlgebraicVariety

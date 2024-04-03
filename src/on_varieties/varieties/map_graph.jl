@@ -18,10 +18,7 @@ MapGraph(φ::ExpressionMap)
 julia> @var R[1:3,1:3] t[1:3] E[1:3,1:3]
 (Variable[R₁₋₁ R₁₋₂ R₁₋₃; R₂₋₁ R₂₋₂ R₂₋₃; R₃₋₁ R₃₋₂ R₃₋₃], Variable[t₁, t₂, t₃], Variable[E₁₋₁ E₁₋₂ E₁₋₃; E₂₋₁ E₂₋₂ E₂₋₃; E₃₋₁ E₃₋₂ E₃₋₃])
 
-julia> X = AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t])
-AlgebraicVariety X ⊂ ℂ¹²
- variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
- expressions: 
+julia> X = AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t]);
 
 julia> tₓ = [0 -t[3] t[2]; t[3] 0 -t[1]; -t[2] t[1] 0]
 3×3 Matrix{Expression}:
@@ -29,10 +26,32 @@ julia> tₓ = [0 -t[3] t[2]; t[3] 0 -t[1]; -t[2] t[1] 0]
   t₃    0  -t₁
  -t₂   t₁    0
 
-julia> MapGraph(ExpressionMap(X, E, tₓ*R))
+julia> Γ = MapGraph(ExpressionMap(X, E, tₓ*R))
 MapGraph: Γ ⊂ ℂ¹² × ℂ⁹
- domain:
- map:
+ domain part:
+  AlgebraicVariety X ⊂ ℂ¹²
+   12 variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
+   10 expressions:
+    -1 + R₁₋₁^2 + R₂₋₁^2 + R₃₋₁^2
+    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
+    R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
+    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
+    -1 + R₁₋₂^2 + R₂₋₂^2 + R₃₋₂^2
+    R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
+    R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
+    R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
+    -1 + R₁₋₃^2 + R₂₋₃^2 + R₃₋₃^2
+    -1 + (R₁₋₂*R₂₋₃ - R₁₋₃*R₂₋₂)*R₃₋₁ - (R₁₋₂*R₃₋₃ - R₁₋₃*R₃₋₂)*R₂₋₁ + (-R₃₋₂*R₂₋₃ + R₃₋₃*R₂₋₂)*R₁₋₁
+ image part:
+  E₁₋₁ = t₂*R₃₋₁ - t₃*R₂₋₁
+  E₂₋₁ = -t₁*R₃₋₁ + t₃*R₁₋₁
+  E₃₋₁ = t₁*R₂₋₁ - t₂*R₁₋₁
+  E₁₋₂ = t₂*R₃₋₂ - t₃*R₂₋₂
+  E₂₋₂ = -t₁*R₃₋₂ + t₃*R₁₋₂
+  E₃₋₂ = t₁*R₂₋₂ - t₂*R₁₋₂
+  E₁₋₃ = t₂*R₃₋₃ - t₃*R₂₋₃
+  E₂₋₃ = -t₁*R₃₋₃ + t₃*R₁₋₃
+  E₃₋₃ = t₁*R₂₋₃ - t₂*R₁₋₃
 ```
 """
 struct MapGraph{T<:ExpressionMap} <: AbstractAlgebraicVariety
