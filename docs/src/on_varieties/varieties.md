@@ -26,6 +26,9 @@ MapGraph
 
 ## Methods
 
+We will show the basic functionality of an [`AbstractAlgebraicVariety`](@ref) on 2 concrete examples
+defined in [`AlgebraicVariety`](@ref) and [`MapGraph`](@ref).
+
 ```@docs
 variables(::AbstractAlgebraicVariety)
 nvariables(::AbstractAlgebraicVariety)

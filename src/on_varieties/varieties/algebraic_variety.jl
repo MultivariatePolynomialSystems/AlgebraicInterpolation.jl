@@ -24,23 +24,18 @@ AlgebraicVariety(exprs::AbstractArray; variables::AbstractArray)
 
 # Examples
 ```jldoctest
-julia> @var R[1:3,1:3] t[1:3]
-(Variable[R₁₋₁ R₁₋₂ R₁₋₃; R₂₋₁ R₂₋₂ R₂₋₃; R₃₋₁ R₃₋₂ R₃₋₃], Variable[t₁, t₂, t₃])
+julia> @var R[1:2,1:2] t[1:2]
+(Variable[R₁₋₁ R₁₋₂; R₂₋₁ R₂₋₂], Variable[t₁, t₂])
 
 julia> AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t])
-AlgebraicVariety X ⊂ ℂ¹²
- 12 variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
- 10 expressions:
-  -1 + R₁₋₁^2 + R₂₋₁^2 + R₃₋₁^2
-  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
-  R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
-  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
-  -1 + R₁₋₂^2 + R₂₋₂^2 + R₃₋₂^2
-  R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
-  R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
-  R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
-  -1 + R₁₋₃^2 + R₂₋₃^2 + R₃₋₃^2
-  -1 + (R₁₋₂*R₂₋₃ - R₁₋₃*R₂₋₂)*R₃₋₁ - (R₁₋₂*R₃₋₃ - R₁₋₃*R₃₋₂)*R₂₋₁ + (-R₃₋₂*R₂₋₃ + R₃₋₃*R₂₋₂)*R₁₋₁
+AlgebraicVariety X ⊂ ℂ⁶
+ 6 variables: R₁₋₁, R₂₋₁, R₁₋₂, R₂₋₂, t₁, t₂
+ 5 expressions: 
+  -1 + R₁₋₁^2 + R₂₋₁^2
+  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+  -1 + R₁₋₂^2 + R₂₋₂^2
+  -1 + R₁₋₁*R₂₋₂ - R₁₋₂*R₂₋₁
 ```
 """
 struct AlgebraicVariety <: AbstractAlgebraicVariety
@@ -75,8 +70,8 @@ nvariables(X::AlgebraicVariety) = length(X.variables)
 
 function Base.show(io::IO, X::AlgebraicVariety, offset::String)
     println(io, "$(offset)AlgebraicVariety X ⊂ ℂ$(superscript(nvariables(X)))")
-    println(io, "$(offset) $(nvariables(X)) variables: ", join(variables(X), ", "))
-    println(io, "$(offset) $(nexpressions(X)) expressions:")
+    println(io, "$(offset) $(phrase(nvariables(X), "variable")): ", join(variables(X), ", "))
+    println(io, "$(offset) $(phrase(nexpressions(X), "expression")): ")
     for (j, expr) in enumerate(expressions(X))
         print(io, "$(offset)  ", expr)
         j < nexpressions(X) && print(io, "\n")

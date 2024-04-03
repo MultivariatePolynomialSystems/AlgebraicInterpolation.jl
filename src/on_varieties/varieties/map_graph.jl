@@ -15,43 +15,25 @@ MapGraph(φ::ExpressionMap)
 
 # Examples
 ```jldoctest
-julia> @var R[1:3,1:3] t[1:3] E[1:3,1:3]
-(Variable[R₁₋₁ R₁₋₂ R₁₋₃; R₂₋₁ R₂₋₂ R₂₋₃; R₃₋₁ R₃₋₂ R₃₋₃], Variable[t₁, t₂, t₃], Variable[E₁₋₁ E₁₋₂ E₁₋₃; E₂₋₁ E₂₋₂ E₂₋₃; E₃₋₁ E₃₋₂ E₃₋₃])
+julia> @var R[1:2,1:2] t[1:2] s[1:2]
+(Variable[R₁₋₁ R₁₋₂; R₂₋₁ R₂₋₂], Variable[t₁, t₂], Variable[s₁, s₂])
 
 julia> X = AlgebraicVariety([R'*R-I, det(R)-1]; variables=[R, t]);
 
-julia> tₓ = [0 -t[3] t[2]; t[3] 0 -t[1]; -t[2] t[1] 0]
-3×3 Matrix{Expression}:
-   0  -t₃   t₂
-  t₃    0  -t₁
- -t₂   t₁    0
-
-julia> Γ = MapGraph(ExpressionMap(X, E, tₓ*R))
-MapGraph: Γ ⊂ ℂ¹² × ℂ⁹
+julia> Γ = MapGraph(ExpressionMap(X, s, R*t))
+MapGraph Γ ⊂ ℂ⁶ × ℂ²
  domain part:
-  AlgebraicVariety X ⊂ ℂ¹²
-   12 variables: R₁₋₁, R₂₋₁, R₃₋₁, R₁₋₂, R₂₋₂, R₃₋₂, R₁₋₃, R₂₋₃, R₃₋₃, t₁, t₂, t₃
-   10 expressions:
-    -1 + R₁₋₁^2 + R₂₋₁^2 + R₃₋₁^2
-    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
-    R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
-    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂ + R₃₋₂*R₃₋₁
-    -1 + R₁₋₂^2 + R₂₋₂^2 + R₃₋₂^2
-    R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
-    R₁₋₁*R₁₋₃ + R₂₋₁*R₂₋₃ + R₃₋₃*R₃₋₁
-    R₁₋₂*R₁₋₃ + R₂₋₂*R₂₋₃ + R₃₋₃*R₃₋₂
-    -1 + R₁₋₃^2 + R₂₋₃^2 + R₃₋₃^2
-    -1 + (R₁₋₂*R₂₋₃ - R₁₋₃*R₂₋₂)*R₃₋₁ - (R₁₋₂*R₃₋₃ - R₁₋₃*R₃₋₂)*R₂₋₁ + (-R₃₋₂*R₂₋₃ + R₃₋₃*R₂₋₂)*R₁₋₁
+  AlgebraicVariety X ⊂ ℂ⁶
+   6 variables: R₁₋₁, R₂₋₁, R₁₋₂, R₂₋₂, t₁, t₂
+   5 expressions: 
+    -1 + R₁₋₁^2 + R₂₋₁^2
+    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+    R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+    -1 + R₁₋₂^2 + R₂₋₂^2
+    -1 + R₁₋₁*R₂₋₂ - R₁₋₂*R₂₋₁
  image part:
-  E₁₋₁ = t₂*R₃₋₁ - t₃*R₂₋₁
-  E₂₋₁ = -t₁*R₃₋₁ + t₃*R₁₋₁
-  E₃₋₁ = t₁*R₂₋₁ - t₂*R₁₋₁
-  E₁₋₂ = t₂*R₃₋₂ - t₃*R₂₋₂
-  E₂₋₂ = -t₁*R₃₋₂ + t₃*R₁₋₂
-  E₃₋₂ = t₁*R₂₋₂ - t₂*R₁₋₂
-  E₁₋₃ = t₂*R₃₋₃ - t₃*R₂₋₃
-  E₂₋₃ = -t₁*R₃₋₃ + t₃*R₁₋₃
-  E₃₋₃ = t₁*R₂₋₃ - t₂*R₁₋₃
+  s₁ = t₁*R₁₋₁ + t₂*R₁₋₂
+  s₂ = t₁*R₂₋₁ + t₂*R₂₋₂
 ```
 """
 struct MapGraph{T<:ExpressionMap} <: AbstractAlgebraicVariety
@@ -71,7 +53,7 @@ expr_vars(Γ::MapGraph) = expr_vars(Γ.map)
 nexpr_vars(Γ::MapGraph) = nexpr_vars(Γ.map)
 variables(Γ::MapGraph) = variables(Γ.map)
 nvariables(Γ::MapGraph) = nvariables(Γ.map)
-HC.expressions(Γ::MapGraph) = vcat(expressions(domain(Γ)), expressions(Γ.map) .- expr_vars(Γ))
+expressions(Γ::MapGraph) = vcat(expressions(domain(Γ)), expr_vars(Γ) .- expressions(Γ.map))
 expr_dict(Γ::MapGraph) = expr_dict(Γ.map)
 
 (Γ::MapGraph)(x::AbstractVector) = evaluate(expressions(Γ), variables(Γ) => x)
@@ -87,34 +69,36 @@ function nsamples(Γ::MapGraph, vars::FixedFreeVariables)
     return 0
 end
 
-function Base.show(io::IO, Γ::MapGraph)
+function Base.show(io::IO, Γ::MapGraph, offset::String)
     println(
         io,
-        "MapGraph: Γ ⊂ ",
+        "$(offset)MapGraph Γ ⊂ ",
         "ℂ$(superscript(ndomain_vars(Γ)))",
         " × ",
         "ℂ$(superscript(nimage_vars(Γ)))"
     )
-    println(io, " domain part:")
-    show(io, domain(Γ), "  ")
+    println(io, "$(offset) domain part:")
+    show(io, domain(Γ), "$(offset)  ")
     print(io, "\n")
-    println(io, " image part:")
-    show_map_action(io, Γ.map, "  ")
+    println(io, "$(offset) image part:")
+    show_map_action(io, Γ.map, "$(offset)  ")
 end
 
-function find_sample(Γ::MapGraph; kwargs...)
+Base.show(io::IO, Γ::MapGraph) = show(io, Γ, "")
+
+function generate_sample(Γ::MapGraph; kwargs...)
     s = samples(Γ, FixedFreeVariables(variables(Γ)))
     if !isnothing(s)
         return free(s)[:,rand(1:nsamples(s))]
     else
-        s = find_sample(domain(Γ); kwargs...)
+        s = generate_sample(domain(Γ); kwargs...)
         return isnothing(s) ? nothing : vcat(s, Γ.map(s))
     end
 end
 
 function tangent_space(
     Γ::MapGraph,
-    x::AbstractVector;
+    x::AbstractVector{<:Number};
     tols::Tolerances=Tolerances(),
     var_ids::AbstractVector{Int}=1:nvariables(Γ)
 )
@@ -134,24 +118,14 @@ function tangent_space(
     return vcat(T[dom_ids, :], B*T)
 end
 
-dimension(
-    Γ::MapGraph,
-    x::Union{AbstractVector, Nothing}=nothing;
+function dimension(
+    Γ::MapGraph;
+    sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances()
-) = dimension(domain(Γ), x[1:ndomain_vars(Γ)]; tols=tols)
-
-# TODO: add keyword arg for same fixed values?
-sample(
-    domain::Vector{Variable},
-    vars::FixedFreeVariables=FixedFreeVariables(domain),
-    ::Union{AbstractVector, Nothing}=nothing;
-    nsamples::Int=1,
-    tols::Tolerances=Tolerances(),
-    rand_method::Symbol=:rand_unit
-) = FixedFreeSamples(
-        eval(rand_method)(ComplexF64, nfixed(vars)),
-        eval(rand_method)(ComplexF64, nfree(vars), nsamples)
-    )
+)
+    isnothing(sample) && return dimension(domain(Γ); tols=tols)
+    return dimension(domain(Γ); sample=sample[1:ndomain_vars(Γ)], tols=tols)
+end
 
 function bottom_domain(Γ::MapGraph)
     D = domain(Γ)
@@ -225,7 +199,7 @@ function sample(
     tols::Tolerances=Tolerances(),
     rand_method::Symbol=:rand_unit
 )
-    x = isnothing(x) ? find_sample(Γ) : x
+    x = isnothing(x) ? generate_sample(Γ) : x
     if !possible_to_sample(Γ, vars, x; tols=tols, logging=false)
         error("Impossible to sample")
     end

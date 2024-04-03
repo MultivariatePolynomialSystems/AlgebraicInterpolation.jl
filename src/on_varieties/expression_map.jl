@@ -138,7 +138,7 @@ expr_dict(φ::ExpressionMap) = Dict(zip(φ.expr_vars, φ.exprs))
 
 function show_map_action(io::IO, φ::ExpressionMap, offset::String)
     if isempty(expressions(φ))
-        print(io, "projection to ", join(domain_image_vars(φ), ", "))
+        print(io, "$(offset)projection to ", join(domain_image_vars(φ), ", "))
     else
         for (j, (var, expr)) in enumerate(zip(expr_vars(φ), expressions(φ)))
             print(io, "$(offset)", var, " = ", expr)
