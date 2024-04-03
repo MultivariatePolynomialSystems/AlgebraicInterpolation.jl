@@ -29,7 +29,7 @@ julia> tₓ = [0 -t[3] t[2]; t[3] 0 -t[1]; -t[2] t[1] 0]
   t₃    0  -t₁
  -t₂   t₁    0
 
-julia> Γ = MapGraph(ExpressionMap(X, E, tₓ*R))
+julia> MapGraph(ExpressionMap(X, E, tₓ*R))
 MapGraph: Γ ⊂ ℂ¹² × ℂ⁹
  domain:
  map:
@@ -76,9 +76,11 @@ function Base.show(io::IO, Γ::MapGraph)
         " × ",
         "ℂ$(superscript(nimage_vars(Γ)))"
     )
-    println(io, " domain:")
-    print(io, " map:")
-    # TODO
+    println(io, " domain part:")
+    show(io, domain(Γ), "  ")
+    print(io, "\n")
+    println(io, " image part:")
+    show_map_action(io, Γ.map, "  ")
 end
 
 function find_sample(Γ::MapGraph; kwargs...)

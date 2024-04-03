@@ -58,16 +58,22 @@ AlgebraicVariety(
     variables::AbstractArray
 ) = AlgebraicVariety(exprs, nothing; variables=variables)
 
-expressions(X::AlgebraicVariety) = expressions(X.system)
+expressions(X::AlgebraicVariety) = HC.expressions(X.system)
 variables(F::System) = vcat(HC.variables(F), HC.parameters(F)) # WARNING: redefine variables from HC
 variables(X::AlgebraicVariety) = X.variables
 nvariables(X::AlgebraicVariety) = length(X.variables)
 
-function Base.show(io::IO, X::AlgebraicVariety)
-    println(io, "AlgebraicVariety X ⊂ ℂ$(superscript(nvariables(X)))")
-    println(io, " variables: ", join(variables(X), ", "))
-    print(io, " expressions: ")
+function Base.show(io::IO, X::AlgebraicVariety, offset::String)
+    println(io, "$(offset)AlgebraicVariety X ⊂ ℂ$(superscript(nvariables(X)))")
+    println(io, "$(offset) $(nvariables(X)) variables: ", join(variables(X), ", "))
+    println(io, "$(offset) $(nexpressions(X)) expressions:")
+    for (j, expr) in enumerate(expressions(X))
+        print(io, "$(offset)  ", expr)
+        j < nexpressions(X) && print(io, "\n")
+    end
 end
+
+Base.show(io::IO, X::AlgebraicVariety) = show(io, X, "")
 
 HC.System(X::AlgebraicVariety) = X.system
 jacobian(X::AlgebraicVariety) = X.jacobian

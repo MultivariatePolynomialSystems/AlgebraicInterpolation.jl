@@ -85,27 +85,42 @@ nimage_vars(φ::ExpressionMap) = length(φ.expr_vars) + length(φ.domain_image_v
 variables(φ::ExpressionMap) = vcat(domain_vars(φ), φ.expr_vars)
 nvariables(φ::ExpressionMap) = ndomain_vars(φ) + length(φ.expr_vars)
 
-HC.expressions(φ::ExpressionMap) = φ.exprs # TODO: define all_expressions?
+expressions(φ::ExpressionMap) = φ.exprs # TODO: define all_expressions?
 (φ::ExpressionMap)(x::AbstractVector) = evaluate(vcat(φ.exprs, domain_image_vars(φ)), domain_vars(φ)=>x)
 
 expr_dict(φ::ExpressionMap) = Dict(zip(φ.expr_vars, φ.exprs))
 
-function Base.show(io::IO, φ::ExpressionMap)
+function show_map_action(io::IO, φ::ExpressionMap, offset::String)
+    if isempty(expressions(φ))
+        print(io, "projection to ", join(domain_image_vars(φ), ", "))
+    else
+        for (j, (var, expr)) in enumerate(zip(expr_vars(φ), expressions(φ)))
+            print(io, "$(offset)", var, " = ", expr)
+            j < nexpr_vars(φ) && print(io, "\n")
+        end
+        if !isempty(domain_image_vars(φ))
+            print(io, "\n")
+            print(io, "$(offset)projection to ", join(domain_image_vars(φ), ", "))
+        end
+    end
+end
+
+function Base.show(io::IO, φ::ExpressionMap, offset::String)
     println(
         io,
-        "ExpressionMap: ",
+        "$(offset)ExpressionMap: ",
         "ℂ$(superscript(ndomain_vars(φ))) ⊇ X",
         " - - > ",
         "ℂ$(superscript(nimage_vars(φ)))"
     )
-    println(io, " domain:") # TODO
-    println(io, " action:")
-    if isempty(φ.exprs)
-        print(io, "  projection to ", join(domain_image_vars(φ), ", "))
-    else
-        # TODO
-    end
+    println(io, "$(offset) domain:")
+    show(io, domain(φ), "$(offset)  ")
+    print(io, "\n")
+    println(io, "$(offset) action:")
+    show_map_action(io, φ, "$(offset)  ")
 end
+
+Base.show(io::IO, φ::ExpressionMap) = show(io, φ, "")
 
 """
     domain_dimension(φ::ExpressionMap; kwargs...)
