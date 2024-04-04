@@ -49,11 +49,11 @@ domain_vars(Γ::MapGraph) = domain_vars(Γ.map)
 ndomain_vars(Γ::MapGraph) = ndomain_vars(Γ.map)
 image_vars(Γ::MapGraph) = image_vars(Γ.map)
 nimage_vars(Γ::MapGraph) = nimage_vars(Γ.map)
-expr_vars(Γ::MapGraph) = expr_vars(Γ.map)
-nexpr_vars(Γ::MapGraph) = nexpr_vars(Γ.map)
+expression_vars(Γ::MapGraph) = expression_vars(Γ.map)
+nexpression_vars(Γ::MapGraph) = nexpression_vars(Γ.map)
 variables(Γ::MapGraph) = variables(Γ.map)
 nvariables(Γ::MapGraph) = nvariables(Γ.map)
-expressions(Γ::MapGraph) = vcat(expressions(domain(Γ)), expr_vars(Γ) .- expressions(Γ.map))
+expressions(Γ::MapGraph) = vcat(expressions(domain(Γ)), expression_vars(Γ) .- expressions(Γ.map))
 expr_dict(Γ::MapGraph) = expr_dict(Γ.map)
 
 (Γ::MapGraph)(x::AbstractVector) = evaluate(expressions(Γ), variables(Γ) => x)
@@ -105,7 +105,7 @@ function tangent_space(
     @assert norm(Γ(x)) < tols.common_tol
     if (length(var_ids) == nvariables(Γ))
         dom_ids = 1:ndomain_vars(Γ)
-        expr_ids = 1:nexpr_vars(Γ)
+        expr_ids = 1:nexpression_vars(Γ)
     else
         tfs = var_ids .<= ndomain_vars(Γ)
         dom_ids = var_ids[tfs]

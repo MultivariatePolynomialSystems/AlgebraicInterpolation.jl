@@ -1,7 +1,13 @@
 export ExpressionMap,
     domain,
     domain_vars,
+    ndomain_vars,
+    expression_vars,
+    nexpression_vars,
+    projection_vars,
+    nprojection_vars,
     image_vars,
+    nimage_vars,
     domain_dimension,
     image_dimension,
     is_dominant,
@@ -53,8 +59,8 @@ struct ExpressionMap{T<:AbstractAlgebraicVariety}
     domain::T
     expr_vars::Vector{Variable}
     exprs::Vector{Expression}
-    domain_image_vars::Vector{Int}
-    domain_nonimage_vars::Vector{Int}
+    proj_vars::Vector{Int}
+    nonproj_vars::Vector{Int}
     exprs_jacobian::Union{Matrix{Expression}, Nothing}
 end
 
@@ -62,13 +68,13 @@ ExpressionMap(
     domain::AbstractAlgebraicVariety,
     expr_vars::Vector{Variable},
     exprs::Vector{Expression},
-    domain_image_vars::Vector{Int}
+    proj_vars::Vector{Int}
 ) = ExpressionMap(
         domain,
         expr_vars,
         exprs,
-        domain_image_vars,
-        setdiff(1:nvariables(domain), domain_image_vars),
+        proj_vars,
+        setdiff(1:nvariables(domain), proj_vars),
         isempty(exprs) ? nothing : differentiate(exprs, variables(domain))
     )
 
@@ -84,36 +90,207 @@ function ExpressionMap(
     return ExpressionMap(domain, expr_vars, exprs, dom_im_ids)
 end
 
+"""
+    domain(φ::ExpressionMap{T<:AbstractAlgebraicVariety}) -> T
+
+Return the domain of `φ`.
+
+# Examples
+```julia-repl
+julia> domain(φ)
+AlgebraicVariety X ⊂ ℂ⁶
+ 6 variables: R₁₋₁, R₂₋₁, R₁₋₂, R₂₋₂, t₁, t₂
+ 5 expressions: 
+  -1 + R₁₋₁^2 + R₂₋₁^2
+  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+  R₁₋₁*R₁₋₂ + R₂₋₁*R₂₋₂
+  -1 + R₁₋₂^2 + R₂₋₂^2
+  -1 + R₁₋₁*R₂₋₂ - R₁₋₂*R₂₋₁
+```
+"""
 domain(φ::ExpressionMap) = φ.domain
+
+"""
+    domain_vars(φ::ExpressionMap) -> Vector{Variable}
+
+Return the variables of the domain of `φ`.
+
+# Examples
+```julia-repl
+julia> domain_vars(φ)
+6-element Vector{Variable}:
+ R₁₋₁
+ R₂₋₁
+ R₁₋₂
+ R₂₋₂
+   t₁
+   t₂
+```
+"""
 domain_vars(φ::ExpressionMap) = variables(φ.domain)
+
+"""
+    ndomain_vars(φ::ExpressionMap) -> Int
+
+Return the number of variables in the domain of `φ`.
+
+# Examples
+```julia-repl
+julia> ndomain_vars(φ)
+6
+```
+"""
 ndomain_vars(φ::ExpressionMap) = nvariables(φ.domain)
 
-expr_vars(φ::ExpressionMap) = φ.expr_vars
-nexpr_vars(φ::ExpressionMap) = length(φ.expr_vars)
-domain_image_vars(φ::ExpressionMap) = domain_vars(φ)[φ.domain_image_vars]
-image_vars(φ::ExpressionMap) = vcat(φ.expr_vars, domain_image_vars(φ))
-nimage_vars(φ::ExpressionMap) = length(φ.expr_vars) + length(φ.domain_image_vars)
+"""
+    expression_vars(φ::ExpressionMap) -> Vector{Variable}
 
-# doesn't include repetitions
-variables(φ::ExpressionMap) = vcat(domain_vars(φ), φ.expr_vars)
-nvariables(φ::ExpressionMap) = ndomain_vars(φ) + length(φ.expr_vars)
+Return the expression variables of `φ`.
 
+# Examples
+```julia-repl
+julia> expression_vars(φ)
+2-element Vector{Variable}:
+ s₁
+ s₂
+```
+"""
+expression_vars(φ::ExpressionMap) = φ.expr_vars
+
+"""
+    nexpression_vars(φ::ExpressionMap) -> Int
+
+Return the number of expression variables of `φ`.
+
+# Examples
+```julia-repl
+julia> nexpression_vars(φ)
+2
+```
+"""
+nexpression_vars(φ::ExpressionMap) = length(φ.expr_vars)
+
+"""
+    projection_vars(φ::ExpressionMap) -> Vector{Variable}
+
+Return the projection variables of `φ`.
+
+# Examples
+```julia-repl
+julia> projection_vars(φ)
+2-element Vector{Variable}:
+ t₁
+ t₂
+```
+"""
+projection_vars(φ::ExpressionMap) = domain_vars(φ)[φ.proj_vars]
+
+"""
+    nprojection_vars(φ::ExpressionMap) -> Int
+
+Return the number of projection variables of `φ`.
+
+# Examples
+```julia-repl
+julia> nprojection_vars(φ)
+2
+```
+"""
+nprojection_vars(φ::ExpressionMap) = length(φ.proj_vars)
+
+"""
+    image_vars(φ::ExpressionMap) -> Vector{Variable}
+
+Return the concatenated vector of expression and projection variables of `φ`.
+
+# Examples
+```julia-repl
+julia> image_vars(φ)
+4-element Vector{Variable}:
+ s₁
+ s₂
+ t₁
+ t₂
+```
+"""
+image_vars(φ::ExpressionMap) = vcat(expression_vars(φ), projection_vars(φ))
+
+"""
+    nimage_vars(φ::ExpressionMap) -> Int
+
+Return the number of image variables of `φ`.
+
+# Examples
+```julia-repl
+julia> nimage_vars(φ)
+4
+```
+"""
+nimage_vars(φ::ExpressionMap) = nexpression_vars(φ) + nprojection_vars(φ)
+
+"""
+    variables(φ::ExpressionMap) -> Vector{Variable}
+
+Return the concatenated vector of domain and expression variables of `φ`.
+
+# Examples
+```julia-repl
+julia> variables(φ)
+8-element Vector{Variable}:
+ R₁₋₁
+ R₂₋₁
+ R₁₋₂
+ R₂₋₂
+   t₁
+   t₂
+   s₁
+   s₂
+```
+"""
+variables(φ::ExpressionMap) = vcat(domain_vars(φ), expression_vars(φ))
+
+"""
+    nvariables(φ::ExpressionMap) -> Int
+
+Return the number of variables of `φ`.
+
+# Examples
+```julia-repl
+julia> nvariables(φ)
+8
+```
+"""
+nvariables(φ::ExpressionMap) = ndomain_vars(φ) + nexpression_vars(φ)
+
+"""
+    expressions(φ::ExpressionMap) -> Vector{Expression}
+
+Return the expressions that define `φ`. Doesn't include the projection variables.
+
+# Examples
+```julia-repl
+julia> expressions(φ)
+2-element Vector{Expression}:
+ t₁*R₁₋₁ + t₂*R₁₋₂
+ t₁*R₂₋₁ + t₂*R₂₋₂
+```
+"""
 expressions(φ::ExpressionMap) = φ.exprs # TODO: define all_expressions?
-(φ::ExpressionMap)(x::AbstractVector) = evaluate(vcat(φ.exprs, domain_image_vars(φ)), domain_vars(φ)=>x)
+(φ::ExpressionMap)(x::AbstractVector) = evaluate(vcat(φ.exprs, projection_vars(φ)), domain_vars(φ)=>x)
 
 expr_dict(φ::ExpressionMap) = Dict(zip(φ.expr_vars, φ.exprs))
 
 function show_map_action(io::IO, φ::ExpressionMap, offset::String)
     if isempty(expressions(φ))
-        print(io, "$(offset)projection to ", join(domain_image_vars(φ), ", "))
+        print(io, "$(offset)projection to ", join(projection_vars(φ), ", "))
     else
-        for (j, (var, expr)) in enumerate(zip(expr_vars(φ), expressions(φ)))
+        for (j, (var, expr)) in enumerate(zip(expression_vars(φ), expressions(φ)))
             print(io, "$(offset)", var, " = ", expr)
-            j < nexpr_vars(φ) && print(io, "\n")
+            j < nexpression_vars(φ) && print(io, "\n")
         end
-        if !isempty(domain_image_vars(φ))
+        if !isempty(projection_vars(φ))
             print(io, "\n")
-            print(io, "$(offset)projection to ", join(domain_image_vars(φ), ", "))
+            print(io, "$(offset)projection to ", join(projection_vars(φ), ", "))
         end
     end
 end
@@ -171,19 +348,19 @@ function image_dimension(
     x = isnothing(domain_sample) ? generate_sample(domain(φ)) :  domain_sample
     if !isnothing(x)
         vars = domain_vars(φ)
-        dφₓ = isnothing(φ.exprs_jacobian) ? nothing : evaluate(φ.exprs_jacobian[:,φ.domain_nonimage_vars], vars => x)
+        dφₓ = isnothing(φ.exprs_jacobian) ? nothing : evaluate(φ.exprs_jacobian[:,φ.nonproj_vars], vars => x)
         if T isa AffineSpace
             if isnothing(dφₓ)
-                return length(φ.domain_image_vars)
+                return nprojection_vars(φ)
             else
-                return rank(dφₓ; atol=tols.rank_atol) + length(φ.domain_image_vars) # TODO: consider rtol
+                return rank(dφₓ; atol=tols.rank_atol) + nprojection_vars(φ) # TODO: consider rtol
             end
         else
             if isnothing(dφₓ)
-                M = tangent_space(domain(φ), x; tols=tols, var_ids=φ.domain_image_vars)
+                M = tangent_space(domain(φ), x; tols=tols, var_ids=φ.proj_vars)
             else
                 TₓX = tangent_space(domain(φ), x; tols=tols)
-                M = [dφₓ * TₓX[φ.domain_nonimage_vars,:]; TₓX[φ.domain_image_vars,:]]
+                M = [dφₓ * TₓX[φ.nonproj_vars,:]; TₓX[φ.proj_vars,:]]
             end
             return rank(M; atol=tols.rank_atol) # TODO: consider rtol
         end
