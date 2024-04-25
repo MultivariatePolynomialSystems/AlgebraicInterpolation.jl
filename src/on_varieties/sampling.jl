@@ -1,20 +1,4 @@
-export AbstractSampledVariety,
-    SampledSystem,
-    unknowns,
-    parameters,
-    variables,
-    nunknowns,
-    nparameters,
-    nvariables,
-    expressions,
-    samples,
-    nsamples,
-    full_jacobian,
-    find_sample,
-    dimension,
-    finite_dominant_projection,
-    sample,
-    sample!,
+export reasonable_to_sample,
     possible_to_sample
 
 
@@ -32,6 +16,14 @@ Base.getindex(
     vars::Vector{Variable}
 ) = [eval.eval[v] for v in vars]
 
+HC.subs(
+    F::System,
+    substitutions::Pair...
+) = System(
+        subs(HC.expressions(F), substitutions...);
+        variables=setdiff(HC.variables(F), vcat(first.(substitutions)...))
+    )
+
 function generate_sample(F::System; kwargs...)
     pair = HC.find_start_pair(F; kwargs...)
     isnothing(pair) && error("Couldn't generate a random sample of the system")
@@ -41,30 +33,37 @@ function generate_sample(F::System; kwargs...)
 end
 
 function finite_dominant_projection(
-    F::System,
-    x::Union{AbstractVector, Nothing}=nothing;
+    F::System;
+    sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances()
 )
-    φ = finite_dominant_projection(DifferentiatedVariety(F), x; tols=tols)
+    φ = finite_dominant_projection(AlgebraicVariety(F); sample=sample, tols=tols)
     params = image_vars(φ)
     unknws = setdiff(variables(F), params)
     return System(expressions(F); variables=unknws, parameters=params)
 end
 
+# TODO: has to return false if possible_to_sample is false
+"""
+    reasonable_to_sample(X::AbstractAlgebraicVariety, vars::FixedFreeVariables; <keyword_arguments>)
+
+Return `false` if there are no constraints in free variables 
+after fixing all the fixed ones.
+"""
 function reasonable_to_sample(
-    F::AbstractAlgebraicVariety,
-    vars::FixedFreeVariables,
-    x::Union{AbstractVector, Nothing}=nothing;
+    X::AbstractAlgebraicVariety,
+    vars::FixedFreeVariables;
+    sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances()
 )
     dim_fixed = 0
     if !isempty(fixed(vars))
-        φ = ExpressionMap(F, fixed(vars))
-        dim_fixed = image_dimension(φ, x; tols=tols)
+        φ = ExpressionMap(X; projection=fixed(vars))
+        dim_fixed = image_dimension(φ; domain_sample=sample, tols=tols)
     end
 
-    φ = ExpressionMap(F, variables(vars))
-    dim_all = image_dimension(φ, x; tols=tols)
+    φ = ExpressionMap(X; projection=variables(vars))
+    dim_all = image_dimension(φ; domain_sample=sample, tols=tols)
     return dim_all - dim_fixed ≠ nfree(vars)
 end
 
@@ -84,24 +83,24 @@ in this method: same as in [`image_dimension`](@ref).
 * `logging::Bool=true`
 """
 function possible_to_sample(
-    F::AbstractAlgebraicVariety,
-    vars::FixedFreeVariables,
-    x::Union{AbstractVector, Nothing}=nothing;
+    X::AbstractAlgebraicVariety,
+    vars::FixedFreeVariables;
+    sample::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances(),
     logging::Bool=true
 )
-    @assert variables(vars) ⊆ variables(F)
-    x = isnothing(x) ? find_sample(F) : x
+    @assert variables(vars) ⊆ variables(X)
+    x = isnothing(sample) ? generate_sample(X) : sample
 
     dim_fixed = 0
     if !isempty(fixed(vars))
-        φ = ExpressionMap(F, fixed(vars))
-        dim_fixed = image_dimension(φ, x; tols=tols)
+        φ = ExpressionMap(X; projection=fixed(vars))
+        dim_fixed = image_dimension(φ; domain_sample=x, tols=tols)
     end
 
     if logging
-        φ = ExpressionMap(F, variables(vars))
-        dim_all = image_dimension(φ, x; tols=tols)
+        φ = ExpressionMap(X; projection=variables(vars))
+        dim_all = image_dimension(φ; domain_sample=x, tols=tols)
         if dim_all - dim_fixed == nfree(vars)
             if isempty(fixed(vars))
                 @warn "There are no constraints in $(join(free(vars), ", "))"
@@ -114,8 +113,8 @@ function possible_to_sample(
     isempty(fixed(vars)) && return true
 
     for var in free(vars)
-        φ = ExpressionMap(F, vcat(fixed(vars), var))
-        dim_var = image_dimension(φ, x; tols=tols)
+        φ = ExpressionMap(X; projection=vcat(fixed(vars), var))
+        dim_var = image_dimension(φ; domain_sample=x, tols=tols)
         if dim_var == dim_fixed
             logging && @info "Variable $(var) is determined in finite many ways after fixing $(join(fixed(vars), ", "))"
             return false

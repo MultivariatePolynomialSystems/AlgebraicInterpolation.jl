@@ -159,7 +159,7 @@ function extended_bottom_domain(Γ::MapGraph, vars::Vector{Variable})
     bottom_vars = variables(B)
     map_vars = setdiff(vars, bottom_vars)
     var_exprs = [var - var_expression(Γ, var, bottom_vars) for var in map_vars]
-    return System(vcat(expressions(B), var_exprs); variables=vcat(bottom_vars, map_vars))
+    return AlgebraicVariety(vcat(expressions(B), var_exprs); variables=vcat(bottom_vars, map_vars))
 end
 
 function reconstruct_values(
@@ -193,28 +193,28 @@ end
 # TODO: add keyword arg for same fixed values?
 function sample(
     Γ::MapGraph,
-    vars::FixedFreeVariables=FixedFreeVariables(variables(F)),
-    x::Union{AbstractVector, Nothing}=nothing; # TODO: make keyword?
+    vars::FixedFreeVariables=FixedFreeVariables(variables(F));
     nsamples::Int=1,
+    start_point::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances(),
     rand_method::Symbol=:rand_unit
 )
-    x = isnothing(x) ? generate_sample(Γ) : x
-    if !possible_to_sample(Γ, vars, x; tols=tols, logging=false)
+    x = isnothing(start_point) ? generate_sample(Γ) : start_point
+    if !possible_to_sample(Γ, vars; sample=x, tols=tols, logging=false)
         error("Impossible to sample")
     end
-    if !reasonable_to_sample(Γ, vars, x; tols=tols)
+    if !reasonable_to_sample(Γ, vars; sample=x, tols=tols)
         error("Sampling is unnecessary")
     end
 
     # 1. add recursively reconstructed constraints for fixed_map_vars into bottom_domain (obtain F)
-    F = extended_bottom_domain(Γ, fixed(vars))
+    X = extended_bottom_domain(Γ, fixed(vars))
 
     # 2. subs values for fixed(vars) into F and find finite dominant projection (obtain G)
     x = VariableEvaluation(variables(Γ), x)
     x_fixed = x[fixed(vars)]
-    G = subs(F, fixed(vars) => x_fixed)
-    G = finite_dominant_projection(G, x[variables(G)]; tols=tols)
+    Y = subs(X, fixed(vars) => x_fixed)
+    Y = finite_dominant_projection(G; sample=x[variables(G)], tols=tols)
 
     # 3. sample G; TODO: create separate method?
     ps = [eval(rand_method)(ComplexF64, nparameters(G)) for _ in 1:nsamples]
@@ -249,9 +249,9 @@ end
 # TODO: add keyword arg for same fixed values?
 function sample!(
     Γ::MapGraph,
-    vars::FixedFreeVariables=FixedFreeVariables(variables(F)),
-    x::Union{AbstractVector, Nothing}=nothing; # TODO: make keyword?
+    vars::FixedFreeVariables=FixedFreeVariables(variables(F));
     nsamples::Int=1,
+    start_point::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances(),
     rand_method::Symbol=:rand_unit
 )

@@ -5,6 +5,7 @@ In this Julia package we partially deal with polynomial and rational function de
 An alternative would be that a user provides a method that will generate samples without using HomotopyContinuation. In practice it is usually possible to provide such a method, since we very often deal with structured polynomial systems.
 
 ```@docs
+reasonable_to_sample
 possible_to_sample
 sample
 sample!

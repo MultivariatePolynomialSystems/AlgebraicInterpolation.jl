@@ -111,10 +111,10 @@ function generate_sample(X::AlgebraicVariety)
     return isnothing(s) ? generate_sample(System(X)) : free(s)[:,rand(1:nsamples(s))]
 end
 
-# HC.subs(
-#     X::AlgebraicVariety,
-#     substitutions::Pair...
-# ) = AlgebraicVariety(
-#         subs(expressions(F), substitutions...);
-#         variables=setdiff(variables(F), vcat(first.(substitutions)...))
-#     )
+HC.subs(
+    X::AlgebraicVariety,
+    substitutions::Pair...
+) = AlgebraicVariety(
+        subs(expressions(F), substitutions...);
+        variables=setdiff(variables(F), vcat(first.(substitutions)...))
+    )

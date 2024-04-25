@@ -3,7 +3,8 @@ export FixedFreeVariables,
     fixed,
     free,
     nfixed,
-    nfree
+    nfree,
+    nsamples
 
 
 """
@@ -112,7 +113,7 @@ nfree(vars::FixedFreeVariables) = length(vars.free)
 """
     variables(vars::FixedFreeVariables) -> Vector{Variable}
 
-Return all the variables in `vars`.
+Return the concatenated vector of fixed and free variables in `vars`.
 """
 variables(vars::FixedFreeVariables) = vcat(vars.fixed, vars.free)
 
