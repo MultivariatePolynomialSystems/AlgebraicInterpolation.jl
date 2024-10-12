@@ -2,13 +2,17 @@ export sparsify!,
     simplify_numbers,
     eye, a2p, p2a, xx,
     num_mons, num_mons_upto,
-    Tolerances
+    Tolerances,
+    M2VV, V2M, M2V,
+    coefficients
 
 a2p(M::AbstractMatrix{<:Number}) = [M; ones(eltype(M), 1, size(M, 2))]
 p2a(M::AbstractMatrix{<:Number}) = (M./M[end:end,:])[1:end-1,:]
 
-M2VV(M::AbstractMatrix) = [M[:,i] for i in axes(M, 2)]
-M2VM(M::AbstractMatrix) = [reshape(M[:,i], size(M,1), 1) for i in axes(M, 2)]
+M2VV(M::AbstractMatrix; copy::Bool=true) = copy ? [M[:,i] for i in axes(M, 2)] : [view(M,:,i) for i in axes(M,2)]
+
+V2M(v::AbstractVector) = reshape(v, length(v), 1) # TODO: do I need this? I can access a Vector with [i,1] too...
+M2V(M::AbstractMatrix) = M[:,1] # TODO: same here, I can access elements of 1-column matrix M by M[i] too...
 
 function Base.copyto!(M::AbstractMatrix{T}, v::AbstractVector{AbstractVector{T}}; dim::Integer) where {T}
     for i in eachindex(v)
@@ -22,8 +26,10 @@ eye(T, n::Integer) = Matrix{T}(I(n))
 
 prodpow(v::AbstractVector, e::AbstractSparseVector) = prod(v[e.nzind].^e.nzval)
 
-num_mons(n::Integer, d::Integer) = n > 0 ? binomial(Int(n - 1 + d), Int(d)) : 0
-num_mons_upto(n::Integer, d::Integer) = n > 0 ? binomial(Int(n + d), Int(d)) : 0
+function num_mons(n::Integer, d::Integer; upto::Bool=false)
+    upto && return n > 0 ? binomial(Int(n + d), Int(d)) : 0
+    return n > 0 ? binomial(Int(n - 1 + d), Int(d)) : 0
+end
 
 # TODO: test this
 function sparsify!(v::AbstractVector{<:Number}, tol::Real; digits::Integer=0)
@@ -47,7 +53,7 @@ function sparsify!(M::AbstractMatrix{<:Number}, tol::Real; digits::Integer=0)
     end
 end
 
-function simplify_numbers(v::Vector{<:Number})
+function simplify_numbers(v::AbstractVector{<:Number})
     v = Vector{Number}(v)
     for (i, vᵢ) in enumerate(v)
         try
@@ -64,6 +70,23 @@ function simplify_numbers(v::Vector{<:Number})
         end
     end
     return v
+end
+
+function div_by_lowest_magnitude(v::AbstractVector{<:Number}, tol::Float64)
+    j = 1
+    while norm(v[j]) < tol
+        j += 1
+        if j > length(v)
+            return v
+        end
+    end
+    a = v[j]
+    for vᵢ in v
+        if tol < norm(vᵢ) < norm(a)
+            a = vᵢ
+        end
+    end
+    return v./a
 end
 
 function to_ordinal(n::Integer)::String
@@ -136,3 +159,26 @@ end
     rref_tol::Float64=1e-5
     sparsify_tol::Float64=1e-5
 end
+
+function coefficients(f::Expression, mons::MonomialBasis)
+    if iszero(f)
+        return zeros(ComplexF64, length(mons))
+    end
+    dict = to_dict(expand(f), variables(mons))
+    coeffs = zeros(ComplexF64, length(mons))
+    for (mexp, coeff) in dict
+        idx = findfirst(mexp, mons)
+        if !isnothing(idx)
+            coeffs[idx] = coeff
+        else
+            error("The given expression is not representable in the given basis")
+        end
+    end
+    return coeffs
+end
+
+SparseArrays.sparse(
+    Tv::Type{<:Integer},
+    Ti::Type{<:Integer},
+    v::AbstractVector{<:Integer}
+) = SparseVector{Tv, Ti}(sparse(v))

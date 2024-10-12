@@ -41,7 +41,7 @@ function _structure(grading::Grading)
     U₀ = grading.free_part
     if !isnothing(U₀)
         n_free = size(U₀, 1)
-        free_str = n_free == 1 ? "ℤ" : "ℤ$(superscript(n_free))"
+        free_str = n_free == 1 ? "ℂ" : "ℂ$(superscript(n_free))"
         str = str * free_str
     end
     for (i, (sᵢ, Uᵢ)) in enumerate(grading.mod_part)
@@ -244,7 +244,7 @@ function scaling_symmetries(F::System)
     return ScalingGroup(Grading{Int8, Int16}(s, U), vars)
 end
 
-scaling_symmetries(F::SampledSystem) = scaling_symmetries(F.system)
+scaling_symmetries(X::AlgebraicVariety) = scaling_symmetries(X.system)
 
 # TODO: extend to remove rows dependent on other blocks
 function reduce(grading::Grading{Tv,Ti}) where {Tv<:Integer,Ti<:Integer}
@@ -288,9 +288,9 @@ scaling_symmetries(
     vars::Vector{Variable}
 ) = restrict_scalings(scaling_symmetries(F), vars)
 scaling_symmetries(
-    F::SampledSystem,
+    X::AlgebraicVariety,
     vars::Vector{Variable}
-) = scaling_symmetries(F.system, vars)
+) = scaling_symmetries(X.system, vars)
 
 function HC.degree(
     mexp::SparseVector{Tv,Ti},
@@ -310,15 +310,15 @@ function HC.degree(
 end
 
 function to_classes(
-    mons::MonomialVector{Tv,Ti},
+    mons::MonomialBasis{Tv,Ti},
     grading::Grading{Tv,Ti}
 ) where {Tv<:Integer,Ti<:Integer}
 
-    classes = Dict{SparseVector{Tv,Ti}, MonomialVector{Tv,Ti}}()
+    classes = Dict{SparseVector{Tv,Ti}, MonomialBasis{Tv,Ti}}()
     for mexp in mons
         deg = HC.degree(mexp, grading)
         if isnothing(get(classes, deg, nothing)) # the key doesn't exist
-            classes[deg] = MonomialVector{Tv,Ti}(mons.vars)
+            classes[deg] = MonomialBasis{Tv,Ti}(mons.vars)
         end
         push!(classes[deg], mexp)
     end

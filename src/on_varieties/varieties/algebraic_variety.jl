@@ -63,11 +63,20 @@ AlgebraicVariety(
     variables::AbstractArray
 ) = AlgebraicVariety(exprs, nothing; variables=variables)
 
-expressions(X::AlgebraicVariety) = HC.expressions(X.system)
+AlgebraicVariety(
+    F::System
+) = AlgebraicVariety(HC.expressions(F); variables=variables(F))
+
+unknowns(F::System) = HC.variables(F)
+nunknowns(F::System) = length(unknowns(F))
 variables(F::System) = vcat(HC.variables(F), HC.parameters(F)) # WARNING: redefine variables from HC
+nvariables(F::System) = length(variables(F))
+
+expressions(X::AlgebraicVariety) = HC.expressions(X.system)
 variables(X::AlgebraicVariety) = X.variables
 nvariables(X::AlgebraicVariety) = length(X.variables)
 
+# TODO: extend show or name differently?
 function Base.show(io::IO, X::AlgebraicVariety, offset::String)
     println(io, "$(offset)AlgebraicVariety X ⊂ ℂ$(superscript(nvariables(X)))")
     println(io, "$(offset) $(phrase(nvariables(X), "variable")): ", join(variables(X), ", "))

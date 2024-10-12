@@ -78,6 +78,11 @@ ExpressionMap(
         isempty(exprs) ? nothing : differentiate(exprs, variables(domain))
     )
 
+ExpressionMap(
+    domain::AbstractAlgebraicVariety,
+    proj_vars::Vector{Int}
+) = ExpressionMap(domain, Variable[], Expression[], proj_vars)
+
 function ExpressionMap(
     domain::AbstractAlgebraicVariety;
     expressions::Pair{<:AbstractArray, <:AbstractArray}=Pair(Variable[], Expression[]),

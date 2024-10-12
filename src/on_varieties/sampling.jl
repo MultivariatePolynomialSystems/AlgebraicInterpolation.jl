@@ -40,7 +40,7 @@ function finite_dominant_projection(
     φ = finite_dominant_projection(AlgebraicVariety(F); sample=sample, tols=tols)
     params = image_vars(φ)
     unknws = setdiff(variables(F), params)
-    return System(expressions(F); variables=unknws, parameters=params)
+    return System(HC.expressions(F); variables=unknws, parameters=params)
 end
 
 # TODO: has to return false if possible_to_sample is false
@@ -71,7 +71,8 @@ end
     possible_to_sample(X::AbstractAlgebraicVariety, vars::FixedFreeVariables; kwargs...)
 
 Returns `false` if there exists a free variable in `vars` that is determined in 
-finite many ways by all fixed variables in `vars`.
+finite many ways by all fixed variables in `vars`. Supposes that the projection to
+each variable is dominant.
 
 Throws a WARNING (for keyword argument `logging=true`) if there are 
 no constraints in free variables after fixing all the fixed ones.
@@ -183,34 +184,32 @@ end
 
 # TODO: add keyword arg for same fixed values?
 function sample(
-    F::AlgebraicVariety,
+    X::AlgebraicVariety,
     vars::FixedFreeVariables;
     nsamples::Integer=1,
     start_point::Union{AbstractVector, Nothing}=nothing,
     tols::Tolerances=Tolerances(),
     rand_method::Symbol=:rand_unit
 )
-    x = isnothing(x) ? find_sample(F) : x
-    if !possible_to_sample(F, vars, x; tols=tols, logging=false)
-        error("Impossible to sample")
+    x = isnothing(start_point) ? generate_sample(X) : start_point
+    if !possible_to_sample(X, vars; sample=start_point, tols=tols, logging=false)
+        @warn "Impossible to sample"
     end
-    if !reasonable_to_sample(F, vars, x; tols=tols)
-        error("Sampling is unnecessary")
-    end
-
-    if F isa SampledSystem
-        if !isnothing(F.sample_generator)
-            s = F.sample_generator(nsamples=nsamples, vars=vars) # TODO: add rand_method?
-            !isnothing(s) && return s
-        end
+    if !reasonable_to_sample(X, vars; sample=start_point, tols=tols)
+        @warn "Sampling is unnecessary"
     end
 
-    x = VariableEvaluation(variables(F), x)
+    if !isnothing(X.sample_generator)
+        s = X.sample_generator(nsamples=nsamples, vars=vars) # TODO: add rand_method?
+        !isnothing(s) && return s
+    end
+
+    x = VariableEvaluation(variables(X), x)
     x_fixed = x[fixed(vars)]
-    G = subs(System(F), fixed(vars) => x_fixed)
+    G = subs(System(X), fixed(vars) => x_fixed)
 
-    vars_not_fixed = setdiff(variables(F), fixed(vars)) # TODO: variables(G)?
-    G = finite_dominant_projection(G, x[vars_not_fixed]; tols=tols)
+    vars_not_fixed = setdiff(variables(X), fixed(vars)) # TODO: variables(G)?
+    G = finite_dominant_projection(G; sample=x[vars_not_fixed], tols=tols)
 
     ps = [eval(rand_method)(ComplexF64, nparameters(G)) for _ in 1:nsamples]
     res = HC.solve(

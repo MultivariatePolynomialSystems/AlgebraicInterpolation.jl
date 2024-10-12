@@ -197,12 +197,16 @@ Return the number of samples in `s`.
 """
 nsamples(s::FixedFreeSamples) = size(s.free, 2)
 
+function Base.display(s::FixedFreeSamples)
+    display(fixed(s))
+    println()
+    display(free(s))
+end
+
 function Base.show(io::IO, s::FixedFreeSamples)
     println(io, "FixedFreeSamples with $(nsamples(s)) samples")
-    println(io, " fixed:")
-    display(fixed(s))
-    println(io, " free:")
-    display(free(s))
+    # println(io, " fixed:")
+    # println(io, " free:")
 end
 
 function Base.hcat(s₁::FixedFreeSamples, s₂::FixedFreeSamples; tol::Real=1e-10) # TODO: make tol optional?

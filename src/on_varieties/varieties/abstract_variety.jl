@@ -335,11 +335,14 @@ function finite_dominant_projection( # TODO: check efficiency for MapGraph
     x = isnothing(sample) ? generate_sample(X) : sample
     proj_vars = Int[]
     dom_dim = dimension(X; sample=x, tols=tols)
+    if dom_dim == 0
+        error("Zero-dimensional variety doesn't have a dominant projection")
+    end
     im_dim = 0
     for i in 1:nvariables(X)
         push!(proj_vars, i)
         φ = ExpressionMap(X, proj_vars)
-        im_dim_curr = image_dimension(φ, x; tols=tols)
+        im_dim_curr = image_dimension(φ; domain_sample=x, tols=tols)
         im_dim_curr == dom_dim && return φ
         if im_dim_curr > im_dim
             im_dim += 1

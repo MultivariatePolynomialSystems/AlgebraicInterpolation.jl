@@ -21,15 +21,15 @@ function polynomial_functions(
 end
 
 function interpolate_constraints(
-    F::AbstractAlgebraicVariety,
+    X::AbstractAlgebraicVariety,
     vars::FixedFreeVariables;
     degree::Integer,
-    start_point::Union{AbstractVector, Nothing}=nothing,
+    start_point::Union{AbstractVector{<:Number}, Nothing}=nothing,
     tols::Tolerances=Tolerances(),
     sample_rand_method::Symbol=:rand_unit
 )
-    mons = MonomialVector{Int8, Int16}(free(vars); degree=degree)
-    s = sample(F, vars, start_point; nsamples=length(mons), rand_method=sample_rand_method)
+    mons = MonomialBasis{Int8, Int16}(variables=free(vars), degree=degree)
+    s = sample(X, vars; start_point=start_point, nsamples=length(mons), rand_method=sample_rand_method)
 
     A = transpose(evaluate(mons, free(s))) # Vandermonde matrix
     if tols.nullspace_rtol == 0
