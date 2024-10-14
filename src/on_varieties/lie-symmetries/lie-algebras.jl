@@ -18,6 +18,7 @@ export LieAlgebra,
     as_matrix,
     LieAlgebraRepresentation,
     IrreducibleLieAlgebraRepresentation,
+    space_basis,
     to_irreducible,
     IsotypicComponent,
     mul,
@@ -410,14 +411,44 @@ to_expressions(
     tol::Float64=1e-5
 ) = vcat([to_expressions(π; tol=tol) for π in ic.irreds]...)
 
+struct PolynomialVectorSpace
+    vars::Vector{Variable}
+    degree::Int
+    upto::Bool
+end
+
+PolynomialVectorSpace(;
+    variables::Vector{Variable},
+    degree::Int,
+    upto::Bool=true
+) = PolynomialVectorSpace(variables, degree, upto)
+
+variables(V::PolynomialVectorSpace) = V.vars
+nvariables(V::PolynomialVectorSpace) = length(V.vars)
+degree(V::PolynomialVectorSpace) = V.degree
+is_upto(V::PolynomialVectorSpace) = V.upto
+dim(V::PolynomialVectorSpace) = num_mons(nvariables(V), degree(V); upto=is_upto(V))
+
+Base.:(==)(
+    V::PolynomialVectorSpace,
+    W::PolynomialVectorSpace
+) = (V.vars == W.vars) && (V.degree == W.degree) && (V.upto == W.upto)
+
+function Base.show(io::IO, V::PolynomialVectorSpace)
+    println(io, "PolynomialVectorSpace of dimension $(dim(V))")
+    print(io, " variables: $(variables(V))")
+end
+
 struct LieAlgebraRepresentation
     alg::LieAlgebra
+    V::PolynomialVectorSpace
     var_groups::Vector{Vector{Variable}} # defines an action of a Lie algebra
     isotypic::Vector{IsotypicComponent}
 end
 
 function LieAlgebraRepresentation(
     alg::LieAlgebra,
+    V::PolynomialVectorSpace,
     var_groups::Vector{Vector{Variable}},
     irreds::Vector{IrreducibleLieAlgebraRepresentation}
 )
@@ -431,10 +462,11 @@ function LieAlgebraRepresentation(
         end
     end
     iso_comps = [IsotypicComponent(alg, hw, iso) for (hw, iso) in iso_dict]
-    return LieAlgebraRepresentation(alg, var_groups, iso_comps)
+    return LieAlgebraRepresentation(alg, V, var_groups, iso_comps)
 end
 
 algebra(π::LieAlgebraRepresentation) = π.alg
+space(π::LieAlgebraRepresentation) = π.V
 isotypic_components(π::LieAlgebraRepresentation) = π.isotypic
 irreducible_components(π::LieAlgebraRepresentation) = vcat([irreducible_components(iso) for iso in π.isotypic]...)
 dim(π::LieAlgebraRepresentation) = sum([dim(ic) for ic in isotypic_components(π)])
@@ -462,40 +494,6 @@ function nullspace_as_weight_vectors(
     return wvs
 end
 
-function to_irreducible(
-    alg::LieAlgebra,
-    var_groups::Vector{Vector{Variable}},
-    weight_module::WeightModule
-)
-    πXs = vcat([as_matrix(pos_root, basis(weight_module), var_groups) for pos_root in positive_roots(alg)]...)
-    hw_vectors = nullspace_as_weight_vectors(πXs, weight_structure(weight_module))
-    hw_modules = [HighestWeightModule(basis(weight_module), hwv) for hwv in hw_vectors]
-    return [IrreducibleLieAlgebraRepresentation(alg, var_groups, hwm) for hwm in hw_modules]
-end
-
-struct PolynomialVectorSpace
-    vars::Vector{Variable}
-    degree::Int
-    upto::Bool
-end
-
-PolynomialVectorSpace(;
-    variables::Vector{Variable},
-    degree::Int,
-    upto::Bool=true
-) = PolynomialVectorSpace(variables, degree, upto)
-
-variables(V::PolynomialVectorSpace) = V.vars
-nvariables(V::PolynomialVectorSpace) = length(V.vars)
-degree(V::PolynomialVectorSpace) = V.degree
-is_upto(V::PolynomialVectorSpace) = V.upto
-dim(V::PolynomialVectorSpace) = num_mons(nvariables(V), degree(V); upto=is_upto(V))
-
-function Base.show(io::IO, V::PolynomialVectorSpace)
-    println(io, "PolynomialVectorSpace of dimension $(dim(V))")
-    print(io, " variables: $(variables(V))")
-end
-
 function weight_module(
     alg::LieAlgebra,
     variables::Vector{Vector{Variable}},
@@ -507,6 +505,17 @@ function weight_module(
     mon_bases = [MonomialBasis{Int8,Int16}(variables, i; degree=d, upto=false) for (i, d) in enumerate(degrees)]
     mons = ⊗(mon_bases, tensor_basis; equal_vars=true)
     return WeightModule(mons, ws)
+end
+
+function to_irreducible(
+    alg::LieAlgebra,
+    var_groups::Vector{Vector{Variable}},
+    weight_module::WeightModule
+)
+    πXs = vcat([as_matrix(pos_root, basis(weight_module), var_groups) for pos_root in positive_roots(alg)]...)
+    hw_vectors = nullspace_as_weight_vectors(πXs, weight_structure(weight_module))
+    hw_modules = [HighestWeightModule(basis(weight_module), hwv) for hwv in hw_vectors]
+    return [IrreducibleLieAlgebraRepresentation(alg, var_groups, hwm) for hwm in hw_modules]
 end
 
 # TODO: supposes that all the vars in V occur in var_groups
@@ -525,16 +534,11 @@ function LieAlgebraRepresentation(
     return LieAlgebraRepresentation(alg, action, irreds)
 end
 
-# Having two representations π₁: g → V and π₂: g → W, computes a
-# representation π₁ ⊕ π₂: g → V ⊕ W
-function ⊕(π₁::LieAlgebraRepresentation, π₂::LieAlgebraRepresentation)
-
-end
-
 Base.randn(alg::LieAlgebra) = LieAlgebraElem(randn(ComplexF64, dim(alg)), alg)
 
 # Having two representations π₁: g₁ → V and π₂: g₂ → V such that there
 # actions commute, computes a representation π₁ ⊞ π₂: g₁ ⊕ g₂ → V
 function ⊞(π₁::LieAlgebraRepresentation, π₂::LieAlgebraRepresentation)
-
+    @assert space(π₁) == space(π₂)
+    
 end

@@ -26,6 +26,7 @@ makedocs(;
         "Functions on Algebraic Varieties" => [
             "Algebraic varieties" => "on_varieties/varieties.md"
             "ExpressionMap" => "on_varieties/maps.md"
+            "Lie symmetries" => "on_varieties/lie-symmetries.md"
             "Sampling" => "on_varieties/sampling.md"
             "Interpolation" => "on_varieties/interpolation.md"
             # "Scaling symmetries" => "variety/scalings.md"
