@@ -5,7 +5,12 @@ export LieAlgebra,
     basis,
     weight_structure,
     weights,
+    nweights,
     weight_spaces,
+    weight,
+    vector,
+    highest_weight,
+    highest_weight_vector,
     set_chevalley_basis!,
     set_cartan_subalgebra!,
     set_positive_roots!,
@@ -26,7 +31,7 @@ export LieAlgebra,
     irreducible_components,
     PolynomialVectorSpace,
     decompose,
-    ×
+    ⊞
 
 struct WeightStructure
     weights::Vector{Vector{Int}}
@@ -363,7 +368,7 @@ end
 
 tensor_weight_structure(
     alg::LieAlgebra,
-    ds::Vector{<:Integer},
+    ds::AbstractVector{<:Integer},
     v_mexps::Vector{<:Vector{<:SparseVector}},
     tensor_basis # TODO: add type
 ) = tensor_weight_structure([sym_weight_structure(alg, d, mexps) for (d, mexps) in zip(ds, v_mexps)], tensor_basis)
@@ -398,10 +403,11 @@ end
 
 struct IsotypicComponent
     alg::LieAlgebra
-    weight::Vector{Int}
+    highest_weight::Vector{Int}
     irreds::Vector{IrreducibleLieAlgebraRepresentation} # TODO: Vector{HighestWeightModule} ?
 end
 
+highest_weight(ic::IsotypicComponent) = ic.highest_weight
 dim(ic::IsotypicComponent) = sum([dim(irr) for irr in ic.irreds])
 mul(ic::IsotypicComponent) = length(ic.irreds)
 irreducible_components(ic::IsotypicComponent) = ic.irreds
@@ -497,7 +503,7 @@ end
 function weight_module(
     alg::LieAlgebra,
     variables::Vector{Vector{Variable}},
-    degrees::Vector{<:Integer}
+    degrees::AbstractVector{<:Integer}
 )
     v_mexps = [multiexponents(degree=Int8(d), nvars=Int16(length(vars)), upto=false) for (d, vars) in zip(degrees, variables)]
     tensor_basis = Base.Iterators.product([1:length(mexps) for mexps in v_mexps]...)
@@ -525,20 +531,88 @@ function LieAlgebraRepresentation(
     action::Vector{Vector{Variable}}
 )
     @assert issetequal(vcat(action...), variables(V))
-    groups_mexps = multiexponents(degree=Int8(degree(V)), nvars=Int16(length(action)), upto=is_upto(V))
+    groups_mexps = multiexponents(degree=degree(V), nvars=length(action), upto=is_upto(V))
     irreds = IrreducibleLieAlgebraRepresentation[]
     for mexp in groups_mexps
-        wm = weight_module(alg, action, Vector(mexp))
+        wm = weight_module(alg, action, mexp)
         append!(irreds, to_irreducible(alg, action, wm))
     end
-    return LieAlgebraRepresentation(alg, action, irreds)
+    return LieAlgebraRepresentation(alg, V, action, irreds)
 end
 
+Base.rand(
+    V::PolynomialVectorSpace,
+    n::Int
+) = random_monomial_basis(length=n, nvars=nvariables(V), degree=degree(V), upto=upto(V))
 Base.randn(alg::LieAlgebra) = LieAlgebraElem(randn(ComplexF64, dim(alg)), alg)
+
+# Having two representations π₁: g₁ → V and π₂: g₂ → V, checks whether
+# π₁(X)(π₂(Y)(f)) = π₂(Y)(π₁(X)(f)) for random f ∈ V, X ∈ g₁, Y ∈ g₂
+function are_commutative(π₁::LieAlgebraRepresentation, π₂::LieAlgebraRepresentation)
+    @assert space(π₁) == space(π₂)
+    return true # TODO
+end
+
+function highest_weight_vectors(ic::IsotypicComponent)
+    hwvs_dict = Dict{MonomialBasis, Matrix{ComplexF64}}()
+    for irr in irreducible_components(ic)
+        B, hwv = space_basis(irr), vector(highest_weight_vector(irr))
+        hwvs = get(hwvs_dict, B, nothing)
+        if isnothing(hwvs)
+            hwvs_dict[B] = V2M(hwv)
+        else
+            hwvs_dict[B] = hcat(hwvs, hwv)
+        end
+    end
+    return hwvs_dict
+end
+
+function intersect_spaces(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where {T <: Number}
+    N = nullspace(hcat(A, B))
+    return A*N[1:size(A,2), :]
+end
+
+function Base.:∩(ic₁::IsotypicComponent, ic₂::IsotypicComponent)
+    vars = variables(space_basis(irreducible_components(ic₁)[1]))
+    mons₁ = vcat([to_monomials(space_basis(irr)) for irr in irreducible_components(ic₁)]...)
+    mons₂ = vcat([to_monomials(space_basis(irr)) for irr in irreducible_components(ic₂)]...)
+    mons = unique(vcat(mons₁, mons₂))
+    hwv_dicts₁ = [Dict(zip(to_monomials(space_basis(irr)), vector(highest_weight_vector(irr)))) for irr in irreducible_components(ic₁)]
+    hwv_dicts₂ = [Dict(zip(to_monomials(space_basis(irr)), vector(highest_weight_vector(irr)))) for irr in irreducible_components(ic₂)]
+    M₁ = zeros(ComplexF64, length(mons), mul(ic₁))
+    M₂ = zeros(ComplexF64, length(mons), mul(ic₂))
+    for (i, mon) in enumerate(mons)
+        for (j, hwv_dict₁) in enumerate(hwv_dicts₁)
+            val = get(hwv_dict₁, mon, nothing)
+            if !isnothing(val)
+                M₁[i, j] = val
+            end
+        end
+        for (k, hwv_dict₂) in enumerate(hwv_dicts₂)
+            val = get(hwv_dict₂, mon, nothing)
+            if !isnothing(val)
+                M₂[i, k] = val
+            end
+        end
+    end
+    M = intersect_spaces(M₁, M₂)
+    size(M, 2) == 0 && return nothing
+    B = MonomialBasis([multiexponent(mon) for mon in mons], vars)
+    hw = vcat(highest_weight(ic₁), highest_weight(ic₂))
+    irrs = [IrreducibleLieAlgebraRepresentation(ic₁.alg, [], HighestWeightModule(B, WeightVector(hw, v))) for v in eachcol(M)]
+    return IsotypicComponent(ic₁.alg, hw, irrs)
+end
 
 # Having two representations π₁: g₁ → V and π₂: g₂ → V such that there
 # actions commute, computes a representation π₁ ⊞ π₂: g₁ ⊕ g₂ → V
 function ⊞(π₁::LieAlgebraRepresentation, π₂::LieAlgebraRepresentation)
-    @assert space(π₁) == space(π₂)
-    
+    @assert are_commutative(π₁, π₂)
+    iso = IsotypicComponent[]
+    for ic₁ in isotypic_components(π₁)
+        for ic₂ in isotypic_components(π₂)
+            ic = ic₁ ∩ ic₂
+            !isnothing(ic) && push!(iso, ic)
+        end
+    end
+    return iso # TODO: has to return a LieAlgebraRepresentation
 end

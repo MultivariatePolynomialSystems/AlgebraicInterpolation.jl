@@ -120,6 +120,10 @@ multiexponents(mons::MonomialBasis) = mons.mexps
 variables(mons::MonomialBasis) = mons.vars
 nvariables(mons::MonomialBasis) = length(variables(mons))
 Base.length(mons::MonomialBasis) = length(mons.mexps)
+Base.:(==)(
+    mons₁::MonomialBasis,
+    mons₂::MonomialBasis
+) = (mons₁.mexps == mons₂.mexps) && (mons₁.vars == mons₂.vars)
 
 function Base.show(io::IO, mons::MonomialBasis)
     println(io, "$(length(mons))-element $(typeof(mons))")
@@ -162,6 +166,9 @@ variables(mon::Monomial) = mon.vars
 nvariables(mon::Monomial) = length(mon.vars)
 to_expression(mon::Monomial) = prodpow(mon.vars, mon.mexp)
 
+Base.:(==)(m₁::Monomial, m₂::Monomial) = to_expression(m₁) == to_expression(m₂)
+Base.hash(m::Monomial, h::UInt) = hash(to_expression(m), h)
+
 function Base.show(io::IO, mon::Monomial)
     println(io, "$(typeof(mon))")
     print(io, "$(to_expression(mon))")
@@ -193,6 +200,8 @@ HC.differentiate(
 function to_expressions(mons::MonomialBasis)
     return [to_expression(mexp, mons.vars) for mexp in mons.mexps]
 end
+
+to_monomials(mons::MonomialBasis) = [mon for mon in mons]
 
 function Base.iterate(mons::MonomialBasis, state=1)
     state > length(mons) && return nothing

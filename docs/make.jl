@@ -29,7 +29,6 @@ makedocs(;
             "Lie symmetries" => "on_varieties/lie-symmetries.md"
             "Sampling" => "on_varieties/sampling.md"
             "Interpolation" => "on_varieties/interpolation.md"
-            # "Scaling symmetries" => "variety/scalings.md"
         ],
         "Functions on Affine Spaces" => [
 
