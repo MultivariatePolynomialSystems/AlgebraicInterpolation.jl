@@ -30,8 +30,11 @@ include("on_varieties/sampling.jl")
 include("on_varieties/expression_map.jl")
 include("on_varieties/varieties/map_graph.jl")
 
+include("on_varieties/lie-symmetries/weights.jl")
 include("on_varieties/lie-symmetries/lie-algebras.jl")
+include("on_varieties/lie-symmetries/lie-reprs.jl")
 include("on_varieties/lie-symmetries/scalings.jl")
+
 include("on_varieties/interpolation.jl")
 
 end

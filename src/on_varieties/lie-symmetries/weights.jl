@@ -1,3 +1,18 @@
+export WeightStructure,
+    weights,
+    nweights,
+    weight_spaces,
+    WeightVector,
+    weight,
+    vector,
+    WeightModule,
+    basis,
+    weight_structure,
+    HighestWeightModule,
+    highest_weight,
+    highest_weight_vector
+
+
 struct WeightStructure
     weights::Vector{Vector{Int}}
     weight_spaces::Vector{Matrix{ComplexF64}}
@@ -48,31 +63,6 @@ basis(hwm::HighestWeightModule) = hwm.basis
 highest_weight(hwm::HighestWeightModule) = weight(hwm.hw_vector)
 highest_weight_vector(hwm::HighestWeightModule) = hwm.hw_vector
 
-function sym_weight_structure(alg::LieAlgebra, d::Integer, mexps::Vector{<:SparseVector})
-    d = Int(d)
-    d == 0 && return WeightStructure([0], [[1;;]])
-    d == 1 && return weight_structure(alg)
-    combs = multiexponents(; degree=d, nvars=nweights(alg))
-    new_weights_dict = Dict{Vector{Int}, Vector{typeof(combs[1])}}()
-    for comb in combs
-        w = sum([comb.nzval[i]*weights(alg, comb.nzind[i]) for i in 1:length(comb.nzind)])
-        val = get(new_weights_dict, w, nothing)
-        if isnothing(val)
-            new_weights_dict[w] = [comb]
-        else
-            push!(new_weights_dict[w], comb)
-        end
-    end
-    new_weights = [zeros(Int, 0) for _ in 1:length(new_weights_dict)]
-    new_weight_spaces = [zeros(ComplexF64, 0, 0) for _ in 1:length(new_weights_dict)]
-    for (i, (weight, combs)) in enumerate(new_weights_dict)
-        new_weights[i] = weight
-        Ms = [⊙(weight_spaces(alg, comb.nzind), comb.nzval, mexps) for comb in combs]
-        new_weight_spaces[i] = hcat(Ms...)
-    end
-    return WeightStructure(new_weights, new_weight_spaces)
-end
-
 function tensor_weight_structure(
     v_ws::Vector{WeightStructure},
     tensor_basis # TODO: add type
@@ -98,10 +88,3 @@ function tensor_weight_structure(
     end
     return WeightStructure(new_weights, new_weight_spaces)
 end
-
-tensor_weight_structure(
-    alg::LieAlgebra,
-    ds::AbstractVector{<:Integer},
-    v_mexps::Vector{<:Vector{<:SparseVector}},
-    tensor_basis # TODO: add type
-) = tensor_weight_structure([sym_weight_structure(alg, d, mexps) for (d, mexps) in zip(ds, v_mexps)], tensor_basis)

@@ -1,3 +1,16 @@
+export AbstractLieAlgebraRepresentation,
+    IrreducibleRepresentation,
+    space_basis,
+    to_expressions,
+    IsotypicComponent,
+    mul,
+    irreducible_components,
+    PolynomialVectorSpace,
+    is_upto,
+    LieAlgebraRepresentation,
+    space,
+    isotypic_components
+
 abstract type AbstractLieAlgebraRepresentation end
 
 struct IrreducibleRepresentation{T<:AbstractLieAlgebraAction} <: AbstractLieAlgebraRepresentation
@@ -52,10 +65,10 @@ struct PolynomialVectorSpace
 end
 
 PolynomialVectorSpace(;
-    variables::Vector{Variable},
+    variables::AbstractArray,
     degree::Int,
     upto::Bool=true
-) = PolynomialVectorSpace(variables, degree, upto)
+) = PolynomialVectorSpace(Variable.(collect(flatten(variables))), degree, upto)
 
 variables(V::PolynomialVectorSpace) = V.vars
 nvariables(V::PolynomialVectorSpace) = length(V.vars)
@@ -75,7 +88,9 @@ Base.:(==)(
 
 function Base.show(io::IO, V::PolynomialVectorSpace)
     println(io, "PolynomialVectorSpace of dimension $(dim(V))")
-    print(io, " variables: $(variables(V))")
+    println(io, " $(nvariables(V)) variables: ", join(variables(V), ", "))
+    println(io, " degree of polynomials: $(degree(V))")
+    print(io, " homogeneous: $(!is_upto(V))")
 end
 
 
@@ -84,6 +99,11 @@ struct LieAlgebraRepresentation{T<:AbstractLieAlgebraAction} <: AbstractLieAlgeb
     V::PolynomialVectorSpace
     isotypic::Vector{IsotypicComponent{T}}
 end
+
+LieAlgebraRepresentation(
+    action::T,
+    V::PolynomialVectorSpace
+) where {T<:AbstractLieAlgebraAction} = LieAlgebraRepresentation{T}(action, V, [])
 
 function LieAlgebraRepresentation(
     alg::LieAlgebra,
@@ -104,20 +124,21 @@ function LieAlgebraRepresentation(
     return LieAlgebraRepresentation(alg, V, var_groups, iso_comps)
 end
 
-algebra(π::LieAlgebraRepresentation) = π.alg
+action(π::LieAlgebraRepresentation) = π.action
+algebra(π::LieAlgebraRepresentation) = algebra(π.action)
 space(π::LieAlgebraRepresentation) = π.V
 isotypic_components(π::LieAlgebraRepresentation) = π.isotypic
 irreducible_components(π::LieAlgebraRepresentation) = vcat([irreducible_components(iso) for iso in π.isotypic]...)
-dim(π::LieAlgebraRepresentation) = sum([dim(ic) for ic in isotypic_components(π)])
+dim(π::LieAlgebraRepresentation) = dim(space(π))
 
 # called by Shift+Enter
 function Base.show(io::IO, mime::MIME"text/plain", π::LieAlgebraRepresentation)
     println(
         io,
-        "LieAlgebraRepresentation of $(name(π.alg)) ",
+        "LieAlgebraRepresentation of $(name(algebra(π))) ",
         "on the $(dim(π))-dimensional vector space:"
     )
-    show(io, mime, π.var_groups)
+    show(io, mime, action(π))
     # print(io, " action on variables: $(π.var_groups)")
 end
 
@@ -132,6 +153,38 @@ function nullspace_as_weight_vectors(
     end
     return wvs
 end
+
+function sym_weight_structure(alg::LieAlgebra, d::Integer, mexps::Vector{<:SparseVector})
+    d = Int(d)
+    d == 0 && return WeightStructure([0], [[1;;]])
+    d == 1 && return weight_structure(alg)
+    combs = multiexponents(; degree=d, nvars=nweights(alg))
+    new_weights_dict = Dict{Vector{Int}, Vector{typeof(combs[1])}}()
+    for comb in combs
+        w = sum([comb.nzval[i]*weights(alg, comb.nzind[i]) for i in 1:length(comb.nzind)])
+        val = get(new_weights_dict, w, nothing)
+        if isnothing(val)
+            new_weights_dict[w] = [comb]
+        else
+            push!(new_weights_dict[w], comb)
+        end
+    end
+    new_weights = [zeros(Int, 0) for _ in 1:length(new_weights_dict)]
+    new_weight_spaces = [zeros(ComplexF64, 0, 0) for _ in 1:length(new_weights_dict)]
+    for (i, (weight, combs)) in enumerate(new_weights_dict)
+        new_weights[i] = weight
+        Ms = [⊙(weight_spaces(alg, comb.nzind), comb.nzval, mexps) for comb in combs]
+        new_weight_spaces[i] = hcat(Ms...)
+    end
+    return WeightStructure(new_weights, new_weight_spaces)
+end
+
+tensor_weight_structure(
+    alg::LieAlgebra,
+    ds::AbstractVector{<:Integer},
+    v_mexps::Vector{<:Vector{<:SparseVector}},
+    tensor_basis # TODO: add type
+) = tensor_weight_structure([sym_weight_structure(alg, d, mexps) for (d, mexps) in zip(ds, v_mexps)], tensor_basis)
 
 function weight_module(
     alg::LieAlgebra,
@@ -159,9 +212,8 @@ end
 
 # TODO: supposes that all the vars in V occur in var_groups
 function LieAlgebraRepresentation(
-    alg::LieAlgebra,
-    V::PolynomialVectorSpace;
-    action::Vector{Vector{Variable}}
+    action::LieAlgebraAction,
+    V::PolynomialVectorSpace
 )
     @assert issetequal(vcat(action...), variables(V))
     groups_mexps = multiexponents(degree=degree(V), nvars=length(action), upto=is_upto(V))
