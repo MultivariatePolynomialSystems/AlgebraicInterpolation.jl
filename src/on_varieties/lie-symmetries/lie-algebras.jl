@@ -1,94 +1,19 @@
-export LieAlgebra,
-    name,
-    dim,
-    size,
-    basis,
-    weight_structure,
-    weights,
-    nweights,
-    weight_spaces,
-    weight,
-    vector,
-    highest_weight,
-    highest_weight_vector,
-    set_chevalley_basis!,
-    set_cartan_subalgebra!,
-    set_positive_roots!,
-    set_negative_roots!,
-    cartan_subalgebra,
-    positive_roots,
-    negative_roots,
-    LieAlgebraElem,
-    act,
-    as_matrix,
-    LieAlgebraRepresentation,
-    IrreducibleLieAlgebraRepresentation,
-    space_basis,
-    to_irreducible,
-    IsotypicComponent,
-    mul,
-    isotypic_components,
-    irreducible_components,
-    PolynomialVectorSpace,
-    decompose,
-    ⊞, ∩
+abstract type AbstractLieAlgebra end
 
-struct WeightStructure
-    weights::Vector{Vector{Int}}
-    weight_spaces::Vector{Matrix{ComplexF64}}
+struct ScalingLieAlgebra <: AbstractLieAlgebra
+    name::String
+    dim::Int
 end
 
-WeightStructure() = WeightStructure([], [])
+name(alg::ScalingLieAlgebra) = alg.name
+dim(alg::ScalingLieAlgebra) = alg.dim
 
-WeightStructure(
-    weights::Vector{Int},
-    weight_spaces::Vector{Matrix{T}} where T <: Number
-) = WeightStructure([[w] for w in weights], weight_spaces)
-
-WeightStructure(
-    weights::Vector{Int},
-    weight_vectors::Vector{Vector{T}} where T <: Number
-) = WeightStructure(weights, [V2M(v) for v in weight_vectors])
-
-weights(ws::WeightStructure) = ws.weights
-weights(ws::WeightStructure, inds...) = getindex(ws.weights, inds...)
-nweights(ws::WeightStructure) = length(ws.weights)
-weight_spaces(ws::WeightStructure) = ws.weight_spaces
-weight_spaces(ws::WeightStructure, inds...) = getindex(ws.weight_spaces, inds...)
-
-# Base.getindex(ws::WeightStructure, weight::Vector{Int}) = ws.spaces[weight]
-
-struct WeightVector
-    weight::Vector{Int}
-    vector::Vector{ComplexF64}
-end
-
-weight(wv::WeightVector) = wv.weight
-vector(wv::WeightVector) = wv.vector
-
-struct WeightModule
-    basis::MonomialBasis
-    weight_structure::WeightStructure
-end
-
-basis(wm::WeightModule) = wm.basis
-weight_structure(wm::WeightModule) = wm.weight_structure
-
-struct HighestWeightModule
-    basis::MonomialBasis
-    hw_vector::WeightVector
-end
-
-basis(hwm::HighestWeightModule) = hwm.basis
-highest_weight(hwm::HighestWeightModule) = weight(hwm.hw_vector)
-highest_weight_vector(hwm::HighestWeightModule) = hwm.hw_vector
-
-# TODO: make parametric based on basis::Vector{Matrix{T}}?
-mutable struct LieAlgebra
+# Implements basic matrix Lie algebra
+struct LieAlgebra <: AbstractLieAlgebra
     name::String
     basis::Vector{Matrix{ComplexF64}}
     chevalley_basis::Vector{Vector{Vector{ComplexF64}}} # given by coefficients in basis; [cartan, positive, negative]
-    weight_structure::WeightStructure # TODO: rename?
+    weight_structure::WeightStructure
 end
 
 function Base.show(io::IO, alg::LieAlgebra)
@@ -166,9 +91,17 @@ nweights(alg::LieAlgebra) = nweights(alg.weight_structure)
 weight_spaces(alg::LieAlgebra) = alg.weight_structure.weight_spaces
 weight_spaces(alg::LieAlgebra, inds...) = getindex(alg.weight_structure.weight_spaces, inds...)
 
-struct LieAlgebraElem
+
+struct SumLieAlgebra <: AbstractLieAlgebra
+    algs::Vector{AbstractLieAlgebra}
+end
+
+
+abstract type AbstractLieAlgebraElem end
+
+struct LieAlgebraElem <: AbstractLieAlgebraElem
+    alg::LieAlgebra
     coeffs::Vector{ComplexF64}
-    algebra::LieAlgebra
 end
 
 Base.size(elem::LieAlgebraElem) = size(elem.algebra)
@@ -185,6 +118,8 @@ function Base.show(io::IO, elem::LieAlgebraElem)
     print(io, "LieAlgebraElem from $(name(elem.algebra)) with coefficients: ")
     show(io, elem.coeffs)
 end
+
+Base.randn(alg::LieAlgebra) = LieAlgebraElem(randn(ComplexF64, dim(alg)), alg)
 
 Base.:*(a::Number, elem::LieAlgebraElem) = LieAlgebraElem(a*elem.coeffs, elem.algebra)
 Base.:*(elem::LieAlgebraElem, a::Number) = LieAlgebraElem(a*elem.coeffs, elem.algebra)
@@ -243,376 +178,26 @@ function as_matrix(elem::LieAlgebraElem, B::MonomialBasis, var_groups::Vector{Ve
     return M
 end
 
-# symmetric power of vectors in vs
-function ⊙(
-    vs::Vector{<:AbstractVector{T}},
-    tensor_basis::Vector{Vector{S}}
-) where {T<:Number, S<:Integer}
-    @assert !isempty(vs)
-    @assert binomial(length(vs[1])+length(vs)-1, length(vs)) == length(tensor_basis)
-    sp = zeros(T, length(tensor_basis))
-    for (i, tnsr) in enumerate(tensor_basis)
-        sym_basis = multiset_permutations(tnsr, length(tnsr))
-        for inds in sym_basis
-            sp[i] += prod([vs[j][ind] for (j, ind) in enumerate(inds)])
-        end
-    end
-    return sp
+struct SumLieAlgebraElem <: AbstractLieAlgebraElem
+    alg::SumLieAlgebra
+    elems::Vector{AbstractLieAlgebraElem}
 end
 
-function mexps_to_tensor_basis(mexps::Vector{<:SparseVector})
-    return [vcat([fill(i, v) for (i, v) in zip(mexp.nzind, mexp.nzval)]...) for mexp in mexps]
-end
 
-⊙(
-    vs::Vector{<:AbstractVector{T}} where T <: Number,
-    mexps::Vector{<:SparseVector}
-) = ⊙(vs, mexps_to_tensor_basis(mexps))
+abstract type AbstractLieAlgebraAction end
 
-⊙(
-    Ms::Vector{<:AbstractMatrix{T}} where T <: Number,
-    mexps::Vector{<:SparseVector}
-) = ⊙(vcat([M2VV(M; copy=false) for M in Ms]...), mexps)
-
-function ⊙(
-    Ms::Vector{Matrix{T}},
-    multiplicities::Vector{Int}, # if [d₁, d₂], then take d₁ columns from M₁ and d₂ from M₂
-    mexps::Vector{<:SparseVector}
-) where {T<:Number}
-    @assert length(Ms) == length(multiplicities)
-    combs = [with_replacement_combinations(1:size(Ms[i], 2), multiplicities[i]) for i in 1:length(Ms)]
-    prod_combs = Base.Iterators.product(combs...)
-    sym_M = zeros(T, length(mexps), length(prod_combs))
-    for (i, prod_comb) in enumerate(prod_combs)
-        sym_M[:,i] = ⊙([view(Ms[j],:,col_ids) for (j, col_ids) in enumerate(prod_comb)], mexps)
-    end
-    return sym_M
-end
-
-function sym_weight_structure(alg::LieAlgebra, d::Integer, mexps::Vector{<:SparseVector})
-    d = Int(d)
-    d == 0 && return WeightStructure([0], [[1;;]])
-    d == 1 && return weight_structure(alg)
-    combs = multiexponents(; degree=d, nvars=nweights(alg))
-    new_weights_dict = Dict{Vector{Int}, Vector{typeof(combs[1])}}()
-    for comb in combs
-        w = sum([comb.nzval[i]*weights(alg, comb.nzind[i]) for i in 1:length(comb.nzind)])
-        val = get(new_weights_dict, w, nothing)
-        if isnothing(val)
-            new_weights_dict[w] = [comb]
-        else
-            push!(new_weights_dict[w], comb)
-        end
-    end
-    new_weights = [zeros(Int, 0) for _ in 1:length(new_weights_dict)]
-    new_weight_spaces = [zeros(ComplexF64, 0, 0) for _ in 1:length(new_weights_dict)]
-    for (i, (weight, combs)) in enumerate(new_weights_dict)
-        new_weights[i] = weight
-        Ms = [⊙(weight_spaces(alg, comb.nzind), comb.nzval, mexps) for comb in combs]
-        new_weight_spaces[i] = hcat(Ms...)
-    end
-    return WeightStructure(new_weights, new_weight_spaces)
-end
-
-# For vs = [v₁,...,vₖ], computes v₁ ⊗ ... ⊗ vₖ
-function ⊗(
-    vs::Vector{<:AbstractVector{T}},
-    tensor_basis # TODO: add type
-) where {T <: Number}
-    v = zeros(T, length(tensor_basis))
-    for (i, tensor) in enumerate(tensor_basis)
-        v[i] = prod([vs[j][k] for (j,k) in enumerate(tensor)])
-    end
-    return v
-end
-
-# TODO: compare timings with kron
-# For Ms = [M₁,...,Mₖ], computes tensor products v₁ ⊗ ... ⊗ vₖ of all possible combinations of columns vᵢ ∈ Mᵢ
-function ⊗(
-    Ms::Vector{<:AbstractMatrix{T}},
-    tensor_basis # TODO: add type
-) where {T <: Number}
-    M = zeros(T, prod([size(M,1) for M in Ms]), prod([size(M,2) for M in Ms]))
-    combs = Base.Iterators.product([axes(M,2) for M in Ms]...)
-    for (i, comb) in enumerate(combs)
-        M[:,i] = ⊗([view(Ms[j],:,col_id) for (j, col_id) in enumerate(comb)], tensor_basis)
-    end
-    return M
-end
-
-function tensor_weight_structure(
-    v_ws::Vector{WeightStructure},
-    tensor_basis # TODO: add type
-)
-    length(v_ws) == 1 && return v_ws[1]
-    combs = Base.Iterators.product([1:nweights(ws) for ws in v_ws]...)
-    new_weights_dict = Dict{Vector{Int}, Vector{NTuple{length(v_ws), Int}}}()
-    for comb in combs
-        w = sum([weights(v_ws[i], j) for (i, j) in enumerate(comb)])
-        val = get(new_weights_dict, w, nothing)
-        if isnothing(val)
-            new_weights_dict[w] = [comb]
-        else
-            push!(new_weights_dict[w], comb)
-        end
-    end
-    new_weights = [zeros(Int, 0) for _ in 1:length(new_weights_dict)]
-    new_weight_spaces = [zeros(ComplexF64, 0, 0) for _ in 1:length(new_weights_dict)]
-    for (i, (weight, combs)) in enumerate(new_weights_dict)
-        new_weights[i] = weight
-        Ms = [⊗([weight_spaces(v_ws[i], j) for (i, j) in enumerate(comb)], tensor_basis) for comb in combs]
-        new_weight_spaces[i] = hcat(Ms...)
-    end
-    return WeightStructure(new_weights, new_weight_spaces)
-end
-
-tensor_weight_structure(
-    alg::LieAlgebra,
-    ds::AbstractVector{<:Integer},
-    v_mexps::Vector{<:Vector{<:SparseVector}},
-    tensor_basis # TODO: add type
-) = tensor_weight_structure([sym_weight_structure(alg, d, mexps) for (d, mexps) in zip(ds, v_mexps)], tensor_basis)
-
-struct IrreducibleLieAlgebraRepresentation
+struct LieAlgebraAction <: AbstractLieAlgebraAction
     alg::LieAlgebra
-    var_groups::Vector{Vector{Variable}}
-    hw_module::HighestWeightModule
+    vars::Vector{Vector{Variable}}
 end
 
-algebra(π::IrreducibleLieAlgebraRepresentation) = π.alg
-space_basis(π::IrreducibleLieAlgebraRepresentation) = basis(π.hw_module)
-highest_weight(π::IrreducibleLieAlgebraRepresentation) = highest_weight(π.hw_module)
-highest_weight_vector(π::IrreducibleLieAlgebraRepresentation) = highest_weight_vector(π.hw_module)
-dim(π::IrreducibleLieAlgebraRepresentation) = prod([2*j+1 for j in highest_weight(π)]) # TODO: works only for so(3)
-
-function to_expressions(π::IrreducibleLieAlgebraRepresentation; tol::Float64=1e-5)
-    exprs = Expression[]
-    # TODO: extend the following to multiple negative roots
-    πJ₋ = as_matrix(negative_roots(π.alg)[1], space_basis(π), π.var_groups)
-    expr_mons = to_expressions(space_basis(π))
-    v = vector(highest_weight_vector(π))
-    while norm(v) > tol
-        v = div_by_lowest_magnitude(v, tol)
-        sparsify!(v, tol)
-        v = simplify_numbers(v)
-        push!(exprs, dot(v, expr_mons))
-        v = ComplexF64.(πJ₋*v)
-    end
-    return exprs
-end
-
-struct IsotypicComponent
-    alg::LieAlgebra
-    highest_weight::Vector{Int}
-    irreds::Vector{IrreducibleLieAlgebraRepresentation} # TODO: Vector{HighestWeightModule} ?
-end
-
-highest_weight(ic::IsotypicComponent) = ic.highest_weight
-dim(ic::IsotypicComponent) = sum([dim(irr) for irr in ic.irreds])
-mul(ic::IsotypicComponent) = length(ic.irreds)
-irreducible_components(ic::IsotypicComponent) = ic.irreds
-
-to_expressions(
-    ic::IsotypicComponent;
-    tol::Float64=1e-5
-) = vcat([to_expressions(π; tol=tol) for π in ic.irreds]...)
-
-struct PolynomialVectorSpace
+struct ScalingLieAction{T<:AbstractMatrix{<:Integer}} <: AbstractLieAlgebraAction
+    alg::ScalingLieAlgebra
     vars::Vector{Variable}
-    degree::Int
-    upto::Bool
+    exps::T # every row is a vector u = [u₁,...,uₖ] which acts on vars by λᵘ
 end
 
-PolynomialVectorSpace(;
-    variables::Vector{Variable},
-    degree::Int,
-    upto::Bool=true
-) = PolynomialVectorSpace(variables, degree, upto)
-
-variables(V::PolynomialVectorSpace) = V.vars
-nvariables(V::PolynomialVectorSpace) = length(V.vars)
-degree(V::PolynomialVectorSpace) = V.degree
-is_upto(V::PolynomialVectorSpace) = V.upto
-dim(V::PolynomialVectorSpace) = num_mons(nvariables(V), degree(V); upto=is_upto(V))
-
-Base.:(==)(
-    V::PolynomialVectorSpace,
-    W::PolynomialVectorSpace
-) = (V.vars == W.vars) && (V.degree == W.degree) && (V.upto == W.upto)
-
-function Base.show(io::IO, V::PolynomialVectorSpace)
-    println(io, "PolynomialVectorSpace of dimension $(dim(V))")
-    print(io, " variables: $(variables(V))")
-end
-
-struct LieAlgebraRepresentation
-    alg::LieAlgebra
-    V::PolynomialVectorSpace
-    var_groups::Vector{Vector{Variable}} # defines an action of a Lie algebra
-    isotypic::Vector{IsotypicComponent}
-end
-
-function LieAlgebraRepresentation(
-    alg::LieAlgebra,
-    V::PolynomialVectorSpace,
-    var_groups::Vector{Vector{Variable}},
-    irreds::Vector{IrreducibleLieAlgebraRepresentation}
-)
-    iso_dict = Dict{Vector{Int}, Vector{IrreducibleLieAlgebraRepresentation}}()
-    for irr in irreds
-        irrs = get(iso_dict, highest_weight(irr), nothing)
-        if isnothing(irrs)
-            iso_dict[highest_weight(irr)] = [irr]
-        else
-            push!(irrs, irr)
-        end
-    end
-    iso_comps = [IsotypicComponent(alg, hw, iso) for (hw, iso) in iso_dict]
-    return LieAlgebraRepresentation(alg, V, var_groups, iso_comps)
-end
-
-algebra(π::LieAlgebraRepresentation) = π.alg
-space(π::LieAlgebraRepresentation) = π.V
-isotypic_components(π::LieAlgebraRepresentation) = π.isotypic
-irreducible_components(π::LieAlgebraRepresentation) = vcat([irreducible_components(iso) for iso in π.isotypic]...)
-dim(π::LieAlgebraRepresentation) = sum([dim(ic) for ic in isotypic_components(π)])
-
-# called by Shift+Enter
-function Base.show(io::IO, mime::MIME"text/plain", π::LieAlgebraRepresentation)
-    println(
-        io,
-        "LieAlgebraRepresentation of $(name(π.alg)) ",
-        "on the $(dim(π))-dimensional vector space:"
-    )
-    show(io, mime, π.var_groups)
-    # print(io, " action on variables: $(π.var_groups)")
-end
-
-function nullspace_as_weight_vectors(
-    M::Matrix{T},
-    ws::WeightStructure
-) where {T <: Number}
-    wvs = WeightVector[]
-    for (weight, weight_space) in zip(ws.weights, ws.weight_spaces)
-        vs = M2VV(weight_space*nullspace(M*weight_space); copy=false)
-        append!(wvs, [WeightVector(weight, v) for v in vs])
-    end
-    return wvs
-end
-
-function weight_module(
-    alg::LieAlgebra,
-    variables::Vector{Vector{Variable}},
-    degrees::AbstractVector{<:Integer}
-)
-    v_mexps = [multiexponents(degree=Int8(d), nvars=Int16(length(vars)), upto=false) for (d, vars) in zip(degrees, variables)]
-    tensor_basis = Base.Iterators.product([1:length(mexps) for mexps in v_mexps]...)
-    ws = tensor_weight_structure(alg, degrees, v_mexps, tensor_basis)
-    mon_bases = [MonomialBasis{Int8,Int16}(variables, i; degree=d, upto=false) for (i, d) in enumerate(degrees)]
-    mons = ⊗(mon_bases, tensor_basis; equal_vars=true)
-    return WeightModule(mons, ws)
-end
-
-function to_irreducible(
-    alg::LieAlgebra,
-    var_groups::Vector{Vector{Variable}},
-    weight_module::WeightModule
-)
-    πXs = vcat([as_matrix(pos_root, basis(weight_module), var_groups) for pos_root in positive_roots(alg)]...)
-    hw_vectors = nullspace_as_weight_vectors(πXs, weight_structure(weight_module))
-    hw_modules = [HighestWeightModule(basis(weight_module), hwv) for hwv in hw_vectors]
-    return [IrreducibleLieAlgebraRepresentation(alg, var_groups, hwm) for hwm in hw_modules]
-end
-
-# TODO: supposes that all the vars in V occur in var_groups
-function LieAlgebraRepresentation(
-    alg::LieAlgebra,
-    V::PolynomialVectorSpace;
-    action::Vector{Vector{Variable}}
-)
-    @assert issetequal(vcat(action...), variables(V))
-    groups_mexps = multiexponents(degree=degree(V), nvars=length(action), upto=is_upto(V))
-    irreds = IrreducibleLieAlgebraRepresentation[]
-    for mexp in groups_mexps
-        wm = weight_module(alg, action, mexp)
-        append!(irreds, to_irreducible(alg, action, wm))
-    end
-    return LieAlgebraRepresentation(alg, V, action, irreds)
-end
-
-Base.rand(
-    V::PolynomialVectorSpace,
-    n::Int
-) = random_monomial_basis(length=n, nvars=nvariables(V), degree=degree(V), upto=upto(V))
-Base.randn(alg::LieAlgebra) = LieAlgebraElem(randn(ComplexF64, dim(alg)), alg)
-
-# Having two representations π₁: g₁ → V and π₂: g₂ → V, checks whether
-# π₁(X)(π₂(Y)(f)) = π₂(Y)(π₁(X)(f)) for random f ∈ V, X ∈ g₁, Y ∈ g₂
-function are_commutative(π₁::LieAlgebraRepresentation, π₂::LieAlgebraRepresentation)
-    @assert space(π₁) == space(π₂)
-    return true # TODO
-end
-
-function highest_weight_vectors(ic::IsotypicComponent)
-    hwvs_dict = Dict{MonomialBasis, Matrix{ComplexF64}}()
-    for irr in irreducible_components(ic)
-        B, hwv = space_basis(irr), vector(highest_weight_vector(irr))
-        hwvs = get(hwvs_dict, B, nothing)
-        if isnothing(hwvs)
-            hwvs_dict[B] = V2M(hwv)
-        else
-            hwvs_dict[B] = hcat(hwvs, hwv)
-        end
-    end
-    return hwvs_dict
-end
-
-function intersect_spaces(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where {T <: Number}
-    N = nullspace(hcat(A, B))
-    return A*N[1:size(A,2), :]
-end
-
-function Base.:∩(ic₁::IsotypicComponent, ic₂::IsotypicComponent)
-    vars = variables(space_basis(irreducible_components(ic₁)[1]))
-    mons₁ = vcat([to_monomials(space_basis(irr)) for irr in irreducible_components(ic₁)]...)
-    mons₂ = vcat([to_monomials(space_basis(irr)) for irr in irreducible_components(ic₂)]...)
-    mons = unique(vcat(mons₁, mons₂))
-    hwv_dicts₁ = [Dict(zip(to_monomials(space_basis(irr)), vector(highest_weight_vector(irr)))) for irr in irreducible_components(ic₁)]
-    hwv_dicts₂ = [Dict(zip(to_monomials(space_basis(irr)), vector(highest_weight_vector(irr)))) for irr in irreducible_components(ic₂)]
-    M₁ = zeros(ComplexF64, length(mons), mul(ic₁))
-    M₂ = zeros(ComplexF64, length(mons), mul(ic₂))
-    for (i, mon) in enumerate(mons)
-        for (j, hwv_dict₁) in enumerate(hwv_dicts₁)
-            val = get(hwv_dict₁, mon, nothing)
-            if !isnothing(val)
-                M₁[i, j] = val
-            end
-        end
-        for (k, hwv_dict₂) in enumerate(hwv_dicts₂)
-            val = get(hwv_dict₂, mon, nothing)
-            if !isnothing(val)
-                M₂[i, k] = val
-            end
-        end
-    end
-    M = intersect_spaces(M₁, M₂)
-    size(M, 2) == 0 && return nothing
-    B = MonomialBasis([multiexponent(mon) for mon in mons], vars)
-    hw = vcat(highest_weight(ic₁), highest_weight(ic₂))
-    irrs = [IrreducibleLieAlgebraRepresentation(ic₁.alg, [], HighestWeightModule(B, WeightVector(hw, v))) for v in eachcol(M)]
-    return IsotypicComponent(ic₁.alg, hw, irrs)
-end
-
-# Having two representations π₁: g₁ → V and π₂: g₂ → V such that there
-# actions commute, computes a representation π₁ ⊞ π₂: g₁ ⊕ g₂ → V
-function ⊞(π₁::LieAlgebraRepresentation, π₂::LieAlgebraRepresentation)
-    @assert are_commutative(π₁, π₂)
-    iso = IsotypicComponent[]
-    for ic₁ in isotypic_components(π₁)
-        for ic₂ in isotypic_components(π₂)
-            ic = ic₁ ∩ ic₂
-            !isnothing(ic) && push!(iso, ic)
-        end
-    end
-    return iso # TODO: has to return a LieAlgebraRepresentation
+struct SumLieAlgebraAction <: AbstractLieAlgebraAction
+    alg::SumLieAlgebra
+    actions::Vector{AbstractLieAlgebraAction}
 end
