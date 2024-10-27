@@ -31,7 +31,7 @@ export LieAlgebra,
     irreducible_components,
     PolynomialVectorSpace,
     decompose,
-    ⊞
+    ⊞, ∩
 
 struct WeightStructure
     weights::Vector{Vector{Int}}
@@ -383,7 +383,7 @@ algebra(π::IrreducibleLieAlgebraRepresentation) = π.alg
 space_basis(π::IrreducibleLieAlgebraRepresentation) = basis(π.hw_module)
 highest_weight(π::IrreducibleLieAlgebraRepresentation) = highest_weight(π.hw_module)
 highest_weight_vector(π::IrreducibleLieAlgebraRepresentation) = highest_weight_vector(π.hw_module)
-dim(π::IrreducibleLieAlgebraRepresentation) = 2*highest_weight(π)[1]+1 # TODO: works only for so(3)
+dim(π::IrreducibleLieAlgebraRepresentation) = prod([2*j+1 for j in highest_weight(π)]) # TODO: works only for so(3)
 
 function to_expressions(π::IrreducibleLieAlgebraRepresentation; tol::Float64=1e-5)
     exprs = Expression[]
