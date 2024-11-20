@@ -19,6 +19,7 @@ export AbstractLieAlgebra,
     ⊕,
     AbstractLieAlgebraElem,
     LieAlgebraElem,
+    var_groups,
     as_matrix,
     act,
     SumLieAlgebraElem,
@@ -33,6 +34,17 @@ abstract type AbstractLieAlgebra end
 struct ScalingLieAlgebra <: AbstractLieAlgebra
     name::String
     dim::Int
+end
+
+function ScalingLieAlgebra(dim::Int)
+    if dim < 0
+        error("Dimension must be positive")
+    elseif dim > 1
+        name = "(ℂˣ)$(superscript(dim))"
+    else
+        name = "ℂˣ"
+    end
+    return ScalingLieAlgebra(name, dim)
 end
 
 name(alg::ScalingLieAlgebra) = alg.name
@@ -87,12 +99,12 @@ Base.size(alg::LieAlgebra) = size(alg.basis[1], 1)
 
 function basis(alg::LieAlgebra)
     coeffs = eye(ComplexF64, dim(alg))
-    return [LieAlgebraElem(c, alg) for c in eachcol(coeffs)]
+    return [LieAlgebraElem(alg, c) for c in eachcol(coeffs)]
 end
 
-cartan_subalgebra(alg::LieAlgebra) = [LieAlgebraElem(coeffs, alg) for coeffs in alg.chevalley_basis[1]]
-positive_roots(alg::LieAlgebra) = [LieAlgebraElem(coeffs, alg) for coeffs in alg.chevalley_basis[2]]
-negative_roots(alg::LieAlgebra) = [LieAlgebraElem(coeffs, alg) for coeffs in alg.chevalley_basis[3]]
+cartan_subalgebra(alg::LieAlgebra) = [LieAlgebraElem(alg, coeffs) for coeffs in alg.chevalley_basis[1]]
+positive_roots(alg::LieAlgebra) = [LieAlgebraElem(alg, coeffs) for coeffs in alg.chevalley_basis[2]]
+negative_roots(alg::LieAlgebra) = [LieAlgebraElem(alg, coeffs) for coeffs in alg.chevalley_basis[3]]
 
 set_chevalley_basis!(
     alg::LieAlgebra,
@@ -123,16 +135,18 @@ weight_spaces(alg::LieAlgebra, inds...) = getindex(alg.weight_structure.weight_s
 
 
 struct SumLieAlgebra <: AbstractLieAlgebra
+    name::String
     algs::Vector{AbstractLieAlgebra}
 end
 
+name(g::SumLieAlgebra) = g.name
 algebras(g::SumLieAlgebra) = g.algs
-name(g::SumLieAlgebra) = join([name(alg) for alg in algebras(g)], " ⊕ ")
+dim(g::SumLieAlgebra) = sum([dim(alg) for alg in algebras(g)])
 
 ⊕(
-    alg₁::LieAlgebra,
-    alg₂::LieAlgebra
-) = SumLieAlgebra([alg₁, alg₂])
+    alg₁::AbstractLieAlgebra,
+    alg₂::AbstractLieAlgebra
+) = SumLieAlgebra("$(name(alg₁)) ⊕ $(name(alg₂))", [alg₁, alg₂])
 
 abstract type AbstractLieAlgebraElem end
 
@@ -141,34 +155,35 @@ struct LieAlgebraElem <: AbstractLieAlgebraElem
     coeffs::Vector{ComplexF64}
 end
 
-Base.size(elem::LieAlgebraElem) = size(elem.algebra)
+algebra(elem::LieAlgebraElem) = elem.alg
+Base.size(elem::LieAlgebraElem) = size(algebra(elem))
 
 # called by Shift+Enter
 function Base.show(io::IO, mime::MIME"text/plain", elem::LieAlgebraElem)
-    println(io, "LieAlgebraElem of $(name(elem.algebra)):")
+    println(io, "LieAlgebraElem of $(name(algebra(elem))):")
     println(io, " matrix representation:")
     show(io, mime, as_matrix(elem)) # TODO: add offset
 end
 
 # called by print and inside vectors/matrices
 function Base.show(io::IO, elem::LieAlgebraElem)
-    print(io, "LieAlgebraElem from $(name(elem.algebra)) with coefficients: ")
+    print(io, "LieAlgebraElem from $(name(algebra(elem))) with coefficients: ")
     show(io, elem.coeffs)
 end
 
-Base.randn(alg::LieAlgebra) = LieAlgebraElem(randn(ComplexF64, dim(alg)), alg)
+Base.randn(alg::LieAlgebra) = LieAlgebraElem(alg, randn(ComplexF64, dim(alg)))
 
-Base.:*(a::Number, elem::LieAlgebraElem) = LieAlgebraElem(a*elem.coeffs, elem.algebra)
-Base.:*(elem::LieAlgebraElem, a::Number) = LieAlgebraElem(a*elem.coeffs, elem.algebra)
+Base.:*(a::Number, elem::LieAlgebraElem) = LieAlgebraElem(elem.alg, a*elem.coeffs)
+Base.:*(elem::LieAlgebraElem, a::Number) = LieAlgebraElem(elem.alg, a*elem.coeffs)
 
 function Base.:+(X::LieAlgebraElem, Y::LieAlgebraElem)
-    @assert X.algebra == Y.algebra
-    return LieAlgebraElem(X.coeffs+Y.coeffs, X.algebra)
+    @assert algebra(X) == algebra(Y)
+    return LieAlgebraElem(algebra(X), X.coeffs+Y.coeffs)
 end
 
 function as_matrix(elem::LieAlgebraElem)
     X = zeros(ComplexF64, size(elem), size(elem))
-    for (i, B) in enumerate(elem.algebra.basis)
+    for (i, B) in enumerate(algebra(elem).basis)
         X += elem.coeffs[i] * B
     end
     return X
@@ -225,42 +240,59 @@ abstract type AbstractLieAlgebraAction end
 
 struct LieAlgebraAction <: AbstractLieAlgebraAction
     alg::LieAlgebra
-    vars::Vector{Vector{Variable}}
+    var_groups::Vector{Vector{Variable}}
 end
 
 LieAlgebraAction(
     alg::LieAlgebra,
-    vars::AbstractVecOrMat{Variable}
-) = LieAlgebraAction(alg, M2VV(hcat(vars)))
+    action::AbstractVecOrMat{Variable}
+) = LieAlgebraAction(alg, M2VV(hcat(action))) # change hcat to V2M?
 
 LieAlgebraAction(
     alg::LieAlgebra,
-    vars::AbstractArray
-) = LieAlgebraAction(alg, M2VV(hcat(vars...)))
+    action::AbstractArray
+) = LieAlgebraAction(alg, M2VV(hcat(action...)))
 
 algebra(g::LieAlgebraAction) = g.alg
-action(g::LieAlgebraAction) = g.vars
+var_groups(g::LieAlgebraAction) = g.var_groups
+variables(g::LieAlgebraAction) = vcat(var_groups(g)...)
+weight_structure(g::LieAlgebraAction) = weight_structure(g.alg)
+weights(g::LieAlgebraAction) = weights(g.alg)
+weights(g::LieAlgebraAction, inds...) = weight(g.alg)
+nweights(g::LieAlgebraAction) = nweights(g.alg)
+weight_spaces(g::LieAlgebraAction) = weight_spaces(g.alg)
+weight_spaces(g::LieAlgebraAction, inds...) = weight_spaces(g.alg)
 
 function Base.show(io::IO, g::LieAlgebraAction)
     println(io, "LieAlgebraAction of $(name(algebra(g)))")
-    print(io, " action: [", join([join(vars, ", ") for vars in action(g)], "], ["), "]")
-end
-
-# TODO
-function are_commutative(g₁::LieAlgebraAction, g₂::LieAlgebraAction)
-    return true
-end
-
-function ⊕(g₁::LieAlgebraAction, g₂::LieAlgebraAction)
-    @assert are_commutative(g₁, g₂)
-    alg = algebra(g₁) ⊕ algebra(g₂)
-    return SumLieAlgebraAction(alg, [g₁, g₂])
+    print(io, " action: [", join([join(vars, ", ") for vars in var_groups(g)], "], ["), "]")
 end
 
 struct ScalingLieAction{T<:AbstractMatrix{<:Integer}} <: AbstractLieAlgebraAction
     alg::ScalingLieAlgebra
     vars::Vector{Variable}
     exps::T # every row is a vector u = [u₁,...,uₖ] which acts on vars by λᵘ
+end
+
+function ScalingLieAction(action_vars::Vector{Variable}, all_vars::Vector{Variable})
+    ids = [findfirst(isequal(var), all_vars) for var in action_vars]
+    exps = zeros(Int, 1, length(all_vars))
+    exps[1, ids] .= 1
+    return ScalingLieAction(ScalingLieAlgebra(1), all_vars, exps)
+end
+
+function ScalingLieAction(action_vars::AbstractArray; variables::AbstractArray=action_vars)
+    act_vars = Variable.(collect(flatten(action_vars)))
+    all_vars = Variable.(collect(flatten(variables)))
+    return ScalingLieAction(act_vars, all_vars)
+end
+
+algebra(g::ScalingLieAction) = g.alg
+variables(g::ScalingLieAction) = g.vars
+
+function Base.show(io::IO, g::ScalingLieAction)
+    println(io, "ScalingLieAction of $(name(algebra(g)))")
+    print(io, " action: ")
 end
 
 struct SumLieAlgebraAction <: AbstractLieAlgebraAction
@@ -274,9 +306,21 @@ nsummands(g::SumLieAlgebraAction) = length(actions(g))
 
 function Base.show(io::IO, g::SumLieAlgebraAction)
     println(io, "SumLieAlgebraAction of $(name(algebra(g)))")
-    for (i, a) in enumerate(actions(g))
-        print(io, " action of $(name(algebra(a))): [")
-        print(io, join([join(vars, ", ") for vars in action(a)], "], ["), "]")
-        i < nsummands(g) && print(io, "\n")
-    end
+    # for (i, a) in enumerate(actions(g))
+    #     print(io, " action of $(name(algebra(a))): [")
+    #     print(io, join([join(vars, ", ") for vars in var_groups(a)], "], ["), "]")
+    #     i < nsummands(g) && print(io, "\n")
+    # end
+    print(io, " action: ")
+end
+
+# TODO
+function are_commutative(g₁::AbstractLieAlgebraAction, g₂::AbstractLieAlgebraAction)
+    return true
+end
+
+function ⊕(g₁::AbstractLieAlgebraAction, g₂::AbstractLieAlgebraAction)
+    @assert are_commutative(g₁, g₂)
+    alg = algebra(g₁) ⊕ algebra(g₂)
+    return SumLieAlgebraAction(alg, [g₁, g₂])
 end

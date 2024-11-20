@@ -13,10 +13,16 @@ export WeightStructure,
     highest_weight_vector
 
 
+# TODO: change to Vector{WeightSpace}?
 struct WeightStructure
     weights::Vector{Vector{Int}}
     weight_spaces::Vector{Matrix{ComplexF64}}
 end
+
+WeightStructure(
+    weights::Vector{Vector{Int}},
+    weight_vectors::Vector{Vector{T}} where T <: Number
+) = WeightStructure(weights, [V2M(v) for v in weight_vectors])
 
 WeightStructure() = WeightStructure([], [])
 
@@ -30,6 +36,14 @@ WeightStructure(
     weight_vectors::Vector{Vector{T}} where T <: Number
 ) = WeightStructure(weights, [V2M(v) for v in weight_vectors])
 
+function Base.show(io::IO, ws::WeightStructure)
+    println(io, "WeightStructure of $(space_dim(ws))-dimensional vector space")
+    println(io, " $(nweights(ws)) weights: ", join(weights(ws), ", "))
+    println(io, " dimensions of $(nweights(ws)) weight spaces: ", join([size(M,2) for M in weight_spaces(ws)], ", "))
+    print(io, " max weight space dimension: ", max([size(M,2) for M in weight_spaces(ws)]...))
+end
+
+space_dim(ws::WeightStructure) = size(ws.weight_spaces[1], 1)
 weights(ws::WeightStructure) = ws.weights
 weights(ws::WeightStructure, inds...) = getindex(ws.weights, inds...)
 nweights(ws::WeightStructure) = length(ws.weights)
@@ -45,6 +59,14 @@ end
 
 weight(wv::WeightVector) = wv.weight
 vector(wv::WeightVector) = wv.vector
+
+struct WeightSpace
+    weight::Vector{Int}
+    space::Matrix{ComplexF64}
+end
+
+weight(ws::WeightSpace) = ws.weight
+space(ws::WeightSpace) = ws.space
 
 struct WeightModule
     basis::MonomialBasis

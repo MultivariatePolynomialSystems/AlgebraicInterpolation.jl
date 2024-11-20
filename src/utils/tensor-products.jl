@@ -1,4 +1,4 @@
-# symmetric power of vectors in vs
+# For vs = [v₁,...,vₖ], computes v₁ ⊙ ... ⊙ vₖ
 function ⊙(
     vs::Vector{<:AbstractVector{T}},
     tensor_basis::Vector{Vector{S}}

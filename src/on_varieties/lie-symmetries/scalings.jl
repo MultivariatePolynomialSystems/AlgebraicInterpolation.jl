@@ -41,7 +41,7 @@ function _structure(grading::Grading)
     U₀ = grading.free_part
     if !isnothing(U₀)
         n_free = size(U₀, 1)
-        free_str = n_free == 1 ? "ℂ" : "ℂ$(superscript(n_free))"
+        free_str = n_free == 1 ? "ℂˣ" : "(ℂˣ)$(superscript(n_free))"
         str = str * free_str
     end
     for (i, (sᵢ, Uᵢ)) in enumerate(grading.mod_part)
@@ -129,7 +129,7 @@ function Base.show(io::IO, scalings::ScalingGroup)
     end
     println(io, "ScalingGroup isomorphic to $(scalings.structure)")
     if n_free != 0
-        print(io, " $(phrase(n_free, "free scaling")):")
+        print(io, " $(phrase(n_free, "Lie scaling")):")
         for free_action in scalings.action[1]
             print(io, "\n  ")
             for (j, (var, expr)) in enumerate(free_action)
@@ -214,19 +214,19 @@ function _hnf_reduce(grading::Grading{Tv,Ti}) where {Tv<:Integer,Ti<:Integer}
 end
 
 """
-    scaling_symmetries(F::System)
+    scaling_symmetries(X::AbstractAlgebraicVariety)
 
-Given a polynomial system `F` returns the group of scaling symmetries 
-of `F`. The scalings that change the parameters are considered as well.
+Given an [`AbstractAlgebraicVariety`](@ref) `X` returns the group of scaling symmetries 
+of `X`.
 
 ```julia-repl
 julia> @var x y a b c;
 
-julia> F = System([x^4+a^2+1, y^2+b+c]; variables=[x, y], parameters=[a,b,c]);
+julia> F = System([x^4+a^2+1, y^2+b+c]; variables=[x, y, a, b, c]);
 
 julia> scaling_symmetries(F)
-ScalingGroup isomorphic to ℤ × ℤ₄ × ℤ₂
- 1 free scaling:
+ScalingGroup isomorphic to ℂˣ × ℤ₄ × ℤ₂
+ 1 Lie scaling:
   y ↦ y*λ, b ↦ b*λ^2, c ↦ c*λ^2
 
  modular scalings:
