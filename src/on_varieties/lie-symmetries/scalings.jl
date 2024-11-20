@@ -222,9 +222,9 @@ of `X`.
 ```julia-repl
 julia> @var x y a b c;
 
-julia> F = System([x^4+a^2+1, y^2+b+c]; variables=[x, y, a, b, c]);
+julia> X = AlgebraicVariety([x^4+a^2+1, y^2+b+c]; variables=[x,y,a,b,c]);
 
-julia> scaling_symmetries(F)
+julia> scaling_symmetries(X)
 ScalingGroup isomorphic to ℂˣ × ℤ₄ × ℤ₂
  1 Lie scaling:
   y ↦ y*λ, b ↦ b*λ^2, c ↦ c*λ^2
