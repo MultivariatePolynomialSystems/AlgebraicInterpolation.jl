@@ -4,7 +4,8 @@ export sparsify!,
     num_mons, num_mons_upto,
     Tolerances,
     M2VV, V2M, M2V,
-    coefficients
+    coefficients, dot,
+    div_by_lowest_magnitude
 
 a2p(M::AbstractMatrix{<:Number}) = [M; ones(eltype(M), 1, size(M, 2))]
 p2a(M::AbstractMatrix{<:Number}) = (M./M[end:end,:])[1:end-1,:]
@@ -22,7 +23,8 @@ end
 
 xx(v) = [0 -v[3] v[2]; v[3] 0 -v[1]; -v[2] v[1] 0]
 xx2v(xx) = [-xx[2,3], xx[1,3], -xx[1,2]]
-eye(T, n::Integer) = Matrix{T}(I(n))
+eye(n::Integer) = eye(Float64, n)
+eye(T::Type, n::Integer) = Matrix{T}(I(n))
 
 prodpow(v::AbstractVector, e::AbstractSparseVector) = prod(v[e.nzind].^e.nzval)
 
@@ -182,3 +184,8 @@ SparseArrays.sparse(
     Ti::Type{<:Integer},
     v::AbstractVector{<:Integer}
 ) = SparseVector{Tv, Ti}(sparse(v))
+
+LinearAlgebra.dot(
+    v::AbstractVector{<:Number},
+    exprs::AbstractVector{Expression}
+) = sum([vᵢ*exprᵢ for (vᵢ, exprᵢ) in zip(v, exprs)])

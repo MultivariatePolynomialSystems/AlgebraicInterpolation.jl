@@ -37,7 +37,7 @@ end
 rrefconv(::Type{T}, A::Matrix) where {T} = rref!(copyto!(similar(A, T), A))
 
 rref(A::Matrix{T}) where {T} = rref!(copy(A))
-rref(A::Matrix{T}) where {T <: Complex} = rrefconv(CC, A)
+rref(A::Matrix{T}) where {T <: Complex} = rrefconv(ComplexF64, A)
 rref(A::Matrix{<:Number}, tol::Real) = rref!(copy(A), tol)
 rref(A::Matrix{T}) where {T <: Union{Integer, Float16, Float32}} = rrefconv(Float64, A)
 rref(A::AbstractMatrix, tol::Real) = rref(Matrix(A), tol)
