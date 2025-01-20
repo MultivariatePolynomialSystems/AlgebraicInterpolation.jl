@@ -33,36 +33,43 @@ function Base.show(io::IO, ρ::IrreducibleRepresentation)
 end
 
 function orbit(
-    expr::Expression,
-    mons::MonomialBasis,
-    weight::Vector{Int},
+    wexpr::WeightExpression,
     action::AbstractLieAlgebraAction,
     processed_weights::Set{Vector{Int}};
     tol::Float64=1e-5
 )
-    c = coefficients(expr, mons)
-    norm(c) < tol && return Expression[]
-    push!(processed_weights, weight)
-    orbit_exprs = [expr]
+    c = coefficients(wexpr)
+    norm(c) < tol && return WeightExpression[]
+    push!(processed_weights, weight(wexpr))
+    orbit_exprs = [wexpr]
     for neg_root_elem in negative_root_elements(algebra(action))
-        new_weight = weight + root(neg_root_elem)
+        new_weight = weight(wexpr) + root(neg_root_elem)
         if new_weight ∉ processed_weights
-            append!(orbit_exprs, orbit(act(neg_root_elem, expr, action), mons, new_weight, action, processed_weights))
+            new_expr = act(neg_root_elem, expression(wexpr), action)
+            coeffs = div_by_lowest_magnitude(coefficients(new_expr, basis(wexpr)), tol)
+            new_wexpr = WeightExpression(coeffs, basis(wexpr), new_weight)
+            append!(orbit_exprs, orbit(new_wexpr, action, processed_weights))
         end
     end
     return orbit_exprs
 end
 
+orbit(
+    wexpr::WeightExpression,
+    action::AbstractLieAlgebraAction;
+    tol::Float64=1e-5
+) = orbit(wexpr, action, Set{Vector{Int}}(); tol=tol)
+
 function to_expressions(ρ::IrreducibleRepresentation; tol::Float64=1e-5, in_rref::Bool=true)
     v = vector(highest_weight_vector(ρ))
     mons = space_basis(ρ)
-    expr = dot(v, to_expressions(mons))
-    orb = orbit(expr, mons, highest_weight(ρ), action(ρ), Set{Vector{Int}}(); tol=tol)
+    wexpr = WeightExpression(v, mons, highest_weight(ρ))
+    orb = orbit(wexpr, action(ρ); tol=tol)
     if in_rref
-        coeffs = hcat([coefficients(f, mons) for f in orb]...)
+        coeffs = hcat([coefficients(f) for f in orb]...)
         coeffs = rref(Matrix{ComplexF64}(transpose(coeffs)))
         sparsify!(coeffs, tol)
         return [dot(simplify_numbers(a), to_expressions(mons)) for a in eachrow(coeffs)]
     end
-    return orb
+    return [expression(wexpr) for wexpr in orb]
 end

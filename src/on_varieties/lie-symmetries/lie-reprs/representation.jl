@@ -44,11 +44,12 @@ function Base.show(io::IO, ::MIME"text/plain", ρ::LieAlgebraRepresentation)
         "LieAlgebraRepresentation of $(name(algebra(ρ))) ",
         "on the $(dim(ρ))-dimensional vector space"
     )
+    println(io, " Lie algebra: ", name(algebra(ρ)))
     println(io, " number of isotypic components: ", nisotypic(ρ))
     print(io, " dimensions of isotypic components: ", join([dim(ic) for ic in isotypic_components(ρ)], ", "))
 end
 
-# 
+# called by print and inside vectors/matrices
 function Base.show(io::IO, ρ::LieAlgebraRepresentation)
     print(
         io,
@@ -63,14 +64,13 @@ function nullspace_as_weight_vectors(
     tol::Real=1e-5
 ) where {T <: Number}
     wvs = WeightVector[]
-    for (weight, weight_space) in zip(ws.weights, ws.weight_spaces)
-        N = weight_space*nullspace(M*weight_space)
+    for weight_space in weight_spaces(ws)
+        N = space(weight_space)*nullspace(M*space(weight_space))
         sparsify!(N, tol)
         vs = M2VV(N; copy=false)
         for v in vs
             v = div_by_lowest_magnitude(v, tol)
-            sparsify!(v, tol)
-            push!(wvs, WeightVector(weight, v))
+            push!(wvs, WeightVector(weight(weight_space), v))
         end
     end
     return wvs
@@ -115,32 +115,6 @@ function weight_module(
 end
 
 function to_irreducible(
-    action::LieAlgebraAction,
-    weight_module::WeightModule
-)
-    ρXs = vcat([as_matrix(pos_root, basis(weight_module), var_groups(action)) for pos_root in positive_roots(algebra(action))]...)
-    hw_vectors = nullspace_as_weight_vectors(ρXs, weight_structure(weight_module))
-    hw_modules = [HighestWeightModule(basis(weight_module), hwv) for hwv in hw_vectors]
-    return [IrreducibleRepresentation(action, hwm) for hwm in hw_modules]
-end
-
-# TODO: supposes that all the vars in V occur in var_groups
-function LieAlgebraRepresentation(
-    action::LieAlgebraAction,
-    V::PolynomialVectorSpace
-)
-    var_grs = var_groups(action)
-    @assert issetequal(vcat(var_grs...), variables(V))
-    groups_mexps = multiexponents(degree=degree(V), nvars=length(var_grs), upto=is_upto(V))
-    irreds = IrreducibleRepresentation[]
-    for mexp in groups_mexps
-        wm = weight_module(action, mexp)
-        append!(irreds, to_irreducible(action, wm))
-    end
-    return LieAlgebraRepresentation(action, V, irreds)
-end
-
-function to_irreducible(
     action::AbstractLieAlgebraAction,
     wm::WeightModule
 )
@@ -150,42 +124,28 @@ function to_irreducible(
     return [IrreducibleRepresentation(action, hwm) for hwm in hw_modules]
 end
 
-# TODO:
-# 1) Determine the highest weight spaces for each action:
-# 1.1) Decompose the action on the variables into irreducibles, i.e. find the highest weight vectors
-# 1.2) Compose isomorphic irreducibles together to form the highest weight spaces
+# # TODO: supposes that all the vars in V occur in var_groups
+# function LieAlgebraRepresentation(
+#     action::LieAlgebraAction,
+#     V::PolynomialVectorSpace
+# )
+#     var_grs = var_groups(action)
+#     @assert issetequal(vcat(var_grs...), variables(V))
+#     groups_mexps = multiexponents(degree=degree(V), nvars=length(var_grs), upto=is_upto(V))
+#     irreds = IrreducibleRepresentation[]
+#     for mexp in groups_mexps
+#         wm = weight_module(action, mexp)
+#         append!(irreds, to_irreducible(action, wm))
+#     end
+#     return LieAlgebraRepresentation(action, V, irreds)
+# end
 
-# 2) Determine the highest weight spaces for the sum of 2 actions:
-# 2.1) Compute all possible intersections of the highest weight spaces Vλ and Vτ of the 2 actions, Vλ ∩ Vτ corresponds
-# to the weight [λ, τ]
-
-# 3) Determine the highest weight spaces for the sum of more than 2 actions: apply the above procedure recursively
-
-# 4) Determine the WeightStructure for the sum action from the highest weight spaces:
-# 4.1) For each highest weight vector apply all possible combinations of lowering operators to get the weight vectors
-# 4.2) Combine the weight vectors with equal weights into weight spaces and create the WeightStructure
-function weight_structure(action::SumLieAlgebraAction)
-    g₁, g₂, _ = actions(action)
-
-    v = [1; im; 0; im; -1; 0; 0; 0; 0]
-    J₋ = negative_root_elements(algebra(g₁))[1]
-    
-    @var E[1:3,1:3]
-    mons = MonomialBasis{Int8,Int16}(E[:]; degree=1, upto=false)
-    ρJ₋₁ = as_matrix(J₋, mons, g₁)
-    ρJ₋₂ = as_matrix(J₋, mons, g₂)
-    
-    wv = [v, ρJ₋₂*v, ρJ₋₂^2*v, ρJ₋₁*v, ρJ₋₂*ρJ₋₁*v, ρJ₋₂^2*ρJ₋₁*v, ρJ₋₁^2*v, ρJ₋₂*ρJ₋₁^2*v, ρJ₋₂^2*ρJ₋₁^2*v]
-    w = [[1,1,1], [1,0,1], [1,-1,1], [0,1,1], [0,0,1], [0,-1,1], [-1,1,1], [-1,0,1], [-1,-1,1]]
-    
-    return WeightStructure(w, wv)
-end
-
+# TODO: compose into isotypic right away
 function LieAlgebraRepresentation(
-    action::SumLieAlgebraAction,
+    action::AbstractLieAlgebraAction,
     V::PolynomialVectorSpace
 )
-    ws = weight_structure(action)
+    ws = weight_structure(action, variables(V))
     irreds = IrreducibleRepresentation{SumLieAlgebraAction}[]
     for d in degrees(V)
         mons = MonomialBasis{Int8,Int16}(variables(V); degree=d, upto=false)

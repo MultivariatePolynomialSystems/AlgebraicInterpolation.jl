@@ -2,16 +2,13 @@ export AbstractLieAlgebra,
     ScalingLieAlgebra,
     name,
     dim,
+    exponents,
     rank,
     LieAlgebra,
     basis,
     cartan_subalgebra,
-    positive_roots,
-    negative_roots,
-    set_chevalley_basis!,
-    set_cartan_subalgebra!,
-    set_positive_roots!,
-    set_negative_roots!,
+    positive_root_elements,
+    negative_root_elements,
     weight_structure,
     weights,
     nweights,
@@ -29,15 +26,16 @@ struct ScalingLieAlgebra <: AbstractLieAlgebra
 end
 
 function ScalingLieAlgebra(exps::Matrix{Int})
-    name = size(exps, 1) == 1 ? "ℂˣ" : "(ℂˣ)$(superscript(size(exps, 1)))"
+    name = size(exps, 1) == 1 ? "ℂ" : "ℂ$(superscript(size(exps, 1)))"
     return ScalingLieAlgebra(name, sparse(exps))
 end
 
-ScalingLieAlgebra(size::Int) = ScalingLieAlgebra("ℂˣ", sparse(ones(Int, 1, size)))
+ScalingLieAlgebra(size::Int) = ScalingLieAlgebra("ℂ", sparse(ones(Int, 1, size)))
 
 name(alg::ScalingLieAlgebra) = alg.name
 dim(alg::ScalingLieAlgebra) = size(alg.exps, 1)
-LinearAlgebra.rank(alg::ScalingLieAlgebra) = dim(alg)
+exponents(alg::ScalingLieAlgebra) = alg.exps
+MultivariateInterpolation.rank(alg::ScalingLieAlgebra) = dim(alg)
 Base.size(alg::ScalingLieAlgebra) = size(alg.exps, 2)
 
 function basis(alg::ScalingLieAlgebra; as_matrices::Bool=false)
@@ -64,6 +62,7 @@ mutable struct LieAlgebra <: AbstractLieAlgebra
     name::String
     basis::ChevalleyBasis
     weight_structure::WeightStructure
+    hw_spaces::Vector{WeightSpace}
 end
 
 function Base.show(io::IO, alg::LieAlgebra)
@@ -83,7 +82,8 @@ function so3_lie_algebra()
     neg_roots = [[-1]]
     ch_basis = ChevalleyBasis([X₁, X₂, X₃], cartan, positive, negative, pos_roots, neg_roots)
     ws = WeightStructure([-1, 0, 1], [[1, -im, 0], [0, 0, 1], [1, im, 0]])
-    return LieAlgebra("𝖘𝖔(3,ℂ)", ch_basis, ws)
+    hw_spaces = [WeightSpace([1], [1, im, 0])]
+    return LieAlgebra("𝖘𝖔(3,ℂ)", ch_basis, ws, hw_spaces)
 end
 
 # TODO
@@ -97,7 +97,7 @@ end
 
 name(alg::LieAlgebra) = alg.name
 dim(alg::LieAlgebra) = length(alg.basis.std_basis)
-LinearAlgebra.rank(alg::LieAlgebra) = length(alg.basis.cartan)
+MultivariateInterpolation.rank(alg::LieAlgebra) = length(alg.basis.cartan)
 Base.size(alg::LieAlgebra) = size(alg.basis.std_basis[1], 1)
 
 function basis(alg::LieAlgebra; as_matrices::Bool=false)
@@ -109,35 +109,19 @@ function basis(alg::LieAlgebra; as_matrices::Bool=false)
 end
 
 cartan_subalgebra(alg::LieAlgebra) = [LieAlgebraElem(alg, coeffs) for coeffs in alg.basis.cartan]
-positive_root_elements(alg::LieAlgebra) = [LieAlgebraElem(alg, coeffs, root) for (coeffs, root) in zip(alg.basis.positive, alg.basis.positive_roots)]
-negative_root_elements(alg::LieAlgebra) = [LieAlgebraElem(alg, coeffs, root) for (coeffs, root) in zip(alg.basis.negative, alg.basis.negative_roots)]
-
-# set_chevalley_basis!(
-#     alg::LieAlgebra,
-#     B::NTuple{3, Vector{Vector{T}}} where T <: Number
-# ) = alg.chevalley_basis = B
-
-# set_cartan_subalgebra!(
-#     alg::LieAlgebra,
-#     B::Vector{Vector{T}} where T <: Number
-# ) = alg.chevalley_basis[1] = B
-
-# set_positive_roots!(
-#     alg::LieAlgebra,
-#     B::Vector{Vector{T}} where T <: Number
-# ) = alg.chevalley_basis[2] = B
-
-# set_negative_roots!(
-#     alg::LieAlgebra,
-#     B::Vector{Vector{T}} where T <: Number
-# ) = alg.chevalley_basis[3] = B
-
+positive_root_elements(
+    alg::LieAlgebra
+) = [LieAlgebraElem(alg, coeffs, root) for (coeffs, root) in zip(alg.basis.positive, alg.basis.positive_roots)]
+negative_root_elements(
+    alg::LieAlgebra
+) = [LieAlgebraElem(alg, coeffs, root) for (coeffs, root) in zip(alg.basis.negative, alg.basis.negative_roots)]
 weight_structure(alg::LieAlgebra) = alg.weight_structure
 weights(alg::LieAlgebra) = alg.weight_structure.weights
 weights(alg::LieAlgebra, inds...) = getindex(alg.weight_structure.weights, inds...)
 nweights(alg::LieAlgebra) = nweights(alg.weight_structure)
 weight_spaces(alg::LieAlgebra) = alg.weight_structure.weight_spaces
 weight_spaces(alg::LieAlgebra, inds...) = getindex(alg.weight_structure.weight_spaces, inds...)
+hw_spaces(alg::LieAlgebra) = alg.hw_spaces
 
 
 struct SumLieAlgebra <: AbstractLieAlgebra
@@ -148,7 +132,7 @@ end
 name(g::SumLieAlgebra) = g.name
 algebras(g::SumLieAlgebra) = g.algs
 dim(g::SumLieAlgebra) = sum([dim(alg) for alg in algebras(g)])
-LinearAlgebra.rank(g::SumLieAlgebra) = sum([rank(alg) for alg in algebras(g)])
+MultivariateInterpolation.rank(g::SumLieAlgebra) = sum([rank(alg) for alg in algebras(g)])
 
 ⊕(
     alg₁::AbstractLieAlgebra,

@@ -15,6 +15,11 @@ M2VV(M::AbstractMatrix; copy::Bool=true) = copy ? [M[:,i] for i in axes(M, 2)] :
 V2M(v::AbstractVector) = reshape(v, length(v), 1) # TODO: do I need this? I can access a Vector with [i,1] too...
 M2V(M::AbstractMatrix) = M[:,1] # TODO: same here, I can access elements of 1-column matrix M by M[i] too...
 
+Base.findfirst(
+    a::AbstractVector{T},
+    b::AbstractVector{T}
+) where {T} = [findfirst(x -> x == aᵢ, b) for aᵢ in a]
+
 function Base.copyto!(M::AbstractMatrix{T}, v::AbstractVector{AbstractVector{T}}; dim::Integer) where {T}
     for i in eachindex(v)
         copyto!(selectdim(M, dim, i), v[i])
@@ -88,7 +93,9 @@ function div_by_lowest_magnitude(v::AbstractVector{<:Number}, tol::Float64)
             a = vᵢ
         end
     end
-    return v./a
+    new_v = v./a
+    sparsify!(new_v, tol)
+    return new_v
 end
 
 function to_ordinal(n::Integer)::String
