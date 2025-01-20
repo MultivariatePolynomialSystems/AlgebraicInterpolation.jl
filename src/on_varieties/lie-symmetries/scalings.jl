@@ -247,7 +247,7 @@ end
 scaling_symmetries(X::AlgebraicVariety) = scaling_symmetries(X.system)
 
 # TODO: extend to remove rows dependent on other blocks
-function reduce(grading::Grading{Tv,Ti}) where {Tv<:Integer,Ti<:Integer}
+function reduce_grading(grading::Grading{Tv,Ti}) where {Tv<:Integer,Ti<:Integer}
     hnf_grading = _hnf_reduce(grading)
     red_grading = Grading{Tv,Ti}()
     U₀ = take_rows(!iszero, hnf_grading.free_part)
@@ -272,7 +272,7 @@ function restrict_scalings(scalings::ScalingGroup, var_ids::Vector{Int})
     for (i, (sᵢ, Uᵢ)) in enumerate(restr_grading.mod_part)
         restr_grading.mod_part[i] = (sᵢ, Uᵢ[:, var_ids])
     end
-    return ScalingGroup(reduce(restr_grading), scalings.vars[var_ids])
+    return ScalingGroup(reduce_grading(restr_grading), scalings.vars[var_ids])
 end
 
 function restrict_scalings(scalings::ScalingGroup, vars::Vector{Variable})

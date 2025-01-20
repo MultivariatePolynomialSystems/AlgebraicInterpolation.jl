@@ -12,9 +12,10 @@ using Combinatorics: partitions, multiset_permutations, combinations, with_repla
 
 import LinearAlgebra
 using LinearAlgebra: nullspace, norm, rank, svdvals, svd, det, dot, I, Diagonal
-export det, I
+export det, I, nullspace
 
 using Base.Iterators: flatten
+using Base: reduce
 
 
 # 1. Basics of Interpolation
