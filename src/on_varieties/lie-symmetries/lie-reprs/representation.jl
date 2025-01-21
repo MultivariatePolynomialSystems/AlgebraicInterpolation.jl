@@ -1,5 +1,5 @@
 export LieAlgebraRepresentation,
-    space,
+    w_space,
     isotypic_components,
     highest_weights
 
@@ -30,11 +30,11 @@ end
 
 action(ρ::LieAlgebraRepresentation) = ρ.action
 algebra(ρ::LieAlgebraRepresentation) = algebra(ρ.action)
-space(ρ::LieAlgebraRepresentation) = ρ.V
+w_space(ρ::LieAlgebraRepresentation) = ρ.V
 nisotypic(ρ::LieAlgebraRepresentation) = length(ρ.isotypic)
 isotypic_components(ρ::LieAlgebraRepresentation) = ρ.isotypic
 irreducibles(ρ::LieAlgebraRepresentation) = vcat([irreducibles(iso) for iso in ρ.isotypic]...)
-dim(ρ::LieAlgebraRepresentation) = dim(space(ρ))
+dim(ρ::LieAlgebraRepresentation) = dim(w_space(ρ))
 highest_weights(ρ::LieAlgebraRepresentation) = [highest_weight(ic) for ic in isotypic_components(ρ)]
 
 # called by Shift+Enter
@@ -64,8 +64,8 @@ function nullspace_as_weight_vectors(
     tol::Real=1e-5
 ) where {T <: Number}
     wvs = WeightVector[]
-    for weight_space in weight_spaces(ws)
-        N = space(weight_space)*nullspace(M*space(weight_space))
+    for weight_space in ws
+        N = matrix(weight_space)*nullspace(M*matrix(weight_space))
         sparsify!(N, tol)
         vs = M2VV(N; copy=false)
         for v in vs

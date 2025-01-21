@@ -3,7 +3,7 @@ export Grading,
     grading,
     scaling_symmetries
 
-using AbstractAlgebra: ZZ, matrix, GF, lift, hnf, snf_with_transform 
+using AbstractAlgebra: ZZ, matrix as aa_matrix, GF, lift, hnf, snf_with_transform 
 using LinearAlgebra: diag
 
 mutable struct Grading{Tv<:Integer,Ti<:Integer}
@@ -162,7 +162,7 @@ function _snf_scaling_symmetries(F::System)::Tuple{Vector{Int}, Vector{Matrix{In
     if size(K, 1) > size(K, 2)
         K = [K zeros(eltype(K), size(K, 1), size(K,1)-size(K,2))]
     end
-    K = matrix(ZZ, K)
+    K = aa_matrix(ZZ, K)
 
     S, U, _ = snf_with_transform(K)
     U, S = Matrix(U), Int.(diag(Matrix(S)))
@@ -182,10 +182,10 @@ function _hnf_reduce!(
 )
     for (i, (sᵢ, Uᵢ)) in enumerate(zip(s, U))
         if sᵢ == 0
-            U[i] = Matrix(hnf(matrix(ZZ, Uᵢ)))
+            U[i] = Matrix(hnf(aa_matrix(ZZ, Uᵢ)))
         else
             try
-                U[i] = Int.(lift.(Matrix(hnf(matrix(GF(sᵢ), Uᵢ)))))
+                U[i] = Int.(lift.(Matrix(hnf(aa_matrix(GF(sᵢ), Uᵢ)))))
             catch
                 U[i] = mod.(Uᵢ, sᵢ)
             end
@@ -198,12 +198,12 @@ function _hnf_reduce(grading::Grading{Tv,Ti}) where {Tv<:Integer,Ti<:Integer}
     U₀ = grading.free_part
     red_grading = Grading{Tv,Ti}()
     if !isnothing(U₀)
-        red_grading.free_part = Matrix(hnf(matrix(ZZ, U₀)))
+        red_grading.free_part = Matrix(hnf(aa_matrix(ZZ, U₀)))
         red_grading.nscalings = size(U₀, 1)
     end
     for (sᵢ, Uᵢ) in grading.mod_part
         try
-            Uᵢ = lift.(Matrix(hnf(matrix(GF(sᵢ), Uᵢ))))
+            Uᵢ = lift.(Matrix(hnf(aa_matrix(GF(sᵢ), Uᵢ))))
         catch
             Uᵢ = mod.(Uᵢ, sᵢ)
         end

@@ -22,20 +22,33 @@ end
 
 weight(wv::WeightVector) = wv.weight
 vector(wv::WeightVector) = wv.vector
+Base.setindex!(wv::WeightVector, n::Number, i::Integer) = wv.vector[i] = n
 
 mutable struct WeightSpace
     weight::Vector{Int}
-    space::Matrix{ComplexF64}
+    matrix::Matrix{ComplexF64}
 end
 
 WeightSpace(wv::WeightVector) = WeightSpace(weight(wv), V2M(vector(wv)))
-WeightSpace(weight::AbstractVector, space::AbstractVector) = WeightSpace(weight, V2M(space))
+WeightSpace(weight::AbstractVector, v::AbstractVector) = WeightSpace(weight, V2M(v))
 
 weight(ws::WeightSpace) = ws.weight
 weight_size(ws::WeightSpace) = length(weight(ws))
-space(ws::WeightSpace) = ws.space
-Base.size(ws::WeightSpace) = size(ws.space, 1)
-dim(ws::WeightSpace) = size(ws.space, 2)
+matrix(ws::WeightSpace) = ws.matrix
+Base.size(ws::WeightSpace) = size(ws.matrix, 1)
+dim(ws::WeightSpace) = size(ws.matrix, 2)
+Base.getindex(ws::WeightSpace, inds...) = ws.matrix[inds...]
+Base.setindex!(ws::WeightSpace, M::AbstractVecOrMat{T}, inds...) where {T <: Number} = ws.matrix[inds...] = M
+
+function Base.hcat(ws1::WeightSpace, ws2::WeightSpace)
+    if weight(ws1) != weight(ws2)
+        throw(ArgumentError("Weights of the two spaces must be equal"))
+    end
+    if size(ws1) != size(ws2)
+        throw(ArgumentError("Sizes of the two spaces must be equal"))
+    end
+    return WeightSpace(weight(ws1), hcat(matrix(ws1), matrix(ws2)))
+end
 
 function Base.show(io::IO, ::MIME"text/plain", ws::WeightSpace)
     println(io, "WeightSpace of dimension $(dim(ws))")
@@ -48,10 +61,10 @@ end
 
 function Base.iterate(ws::WeightSpace, state=1)
     state > dim(ws) && return nothing
-    return (WeightVector(weight(ws), space(ws)[:, state]), state+1)
+    return (WeightVector(weight(ws), matrix(ws)[:, state]), state+1)
 end
 
-function intersect_spaces(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where {T <: Number}
+function Base.:∩(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where {T <: Number}
     N = nullspace(hcat(A, B))
     N = hcat([div_by_lowest_magnitude(N[:,i], 1e-8) for i in 1:size(N, 2)]...)
     sparsify!(N, 1e-8)
@@ -60,30 +73,23 @@ end
 
 function Base.:∩(ws1::WeightSpace, ws2::WeightSpace)
     new_weight = vcat(weight(ws1), weight(ws2))
-    new_space = intersect_spaces(space(ws1), space(ws2))
-    iszero(size(new_space, 2)) && return nothing
-    return WeightSpace(new_weight, new_space)
+    new_matrix = ∩(matrix(ws1), matrix(ws2))
+    iszero(size(new_matrix, 2)) && return nothing
+    return WeightSpace(new_weight, new_matrix)
 end
-
-function Base.:∩(ws1::Vector{WeightSpace}, ws2::Vector{WeightSpace})
-    new_spaces = [ws1[i] ∩ ws2[j] for i in 1:length(ws1), j in 1:length(ws2)]
-    return [ws for ws in new_spaces if !isnothing(ws)]
-end
-
-Base.:∩(ws::Vector{Vector{WeightSpace}}) = reduce(∩, ws)
 
 
 struct WeightStructure
-    weight_spaces::Vector{WeightSpace}
-    dict::Dict{Vector{Int}, Matrix{ComplexF64}}
+    weights::Vector{Vector{Int}}
+    dict::Dict{Vector{Int}, WeightSpace} # weight => space
 end
 
 WeightStructure(
     weights::Vector{Vector{Int}},
     weight_spaces::Vector{Matrix{T}} where T <: Number
 ) = WeightStructure(
-    [WeightSpace(w, M) for (w, M) in zip(weights, weight_spaces)],
-    Dict(zip(weights, weight_spaces))
+    weights,
+    Dict(zip(weights, [WeightSpace(w, M) for (w, M) in zip(weights, weight_spaces)]))
 )
 
 WeightStructure(
@@ -103,20 +109,30 @@ WeightStructure(
     weight_vectors::Vector{Vector{T}} where T <: Number
 ) = WeightStructure(weights, [V2M(v) for v in weight_vectors])
 
+function WeightStructure(w_spaces::Vector{WeightSpace})
+    ws = WeightStructure()
+    for w_space in w_spaces
+        push!(ws, w_space)
+    end
+    return ws
+end
+
 weight_spaces(
     ws::WeightStructure;
     as_matrices::Bool=false
-) = as_matrices ? [space(wsp) for wsp in ws.weight_spaces] : ws.weight_spaces
+) = as_matrices ? [matrix(ws[w]) for w in weights(ws)] : [ws[w] for w in weights(ws)]
+
 weight_spaces(
     ws::WeightStructure,
     inds...;
     as_matrices::Bool=false
 ) = weight_spaces(ws; as_matrices=as_matrices)[inds...]
-weight_size(ws::WeightStructure) = weight_size(ws[1])
-space_dim(ws::WeightStructure) = size(ws[1])
-weights(ws::WeightStructure) = [weight(ws) for ws in weight_spaces(ws)]
-weight(ws::WeightStructure, i::Integer) = weight(weight_spaces(ws)[i])
-nweights(ws::WeightStructure) = length(weight_spaces(ws))
+
+weights(ws::WeightStructure) = ws.weights
+weight_size(ws::WeightStructure) = length(first(weights(ws)))
+space_dim(ws::WeightStructure) = size(ws[first(weights(ws))])
+weight(ws::WeightStructure, i::Integer) = weights(ws)[i]
+nweights(ws::WeightStructure) = length(weights(ws))
 dims(ws::WeightStructure) = [dim(M) for M in weight_spaces(ws)]
 
 function Base.show(io::IO, ws::WeightStructure)
@@ -126,29 +142,45 @@ function Base.show(io::IO, ws::WeightStructure)
     print(io, " max weight space dimension: ", maximum(dims(ws)))
 end
 
-Base.getindex(ws::WeightStructure, i::Integer) = ws.weight_spaces[i]
+Base.length(ws::WeightStructure) = nweights(ws)
 Base.getindex(ws::WeightStructure, weight::Vector{Int}) = ws.dict[weight]
+Base.getindex(ws::WeightStructure, i::Integer) = ws[weight(ws, i)]
+Base.setindex!(ws::WeightStructure, ws_new::WeightSpace, weight::Vector{Int}) = ws.dict[weight] = ws_new
 Base.haskey(ws::WeightStructure, weight::Vector{Int}) = haskey(ws.dict, weight)
 
-function Base.push!(ws::WeightStructure, wv::WeightVector)
-    if haskey(ws, weight(wv))
-        ws.dict[weight(wv)] = hcat(ws[weight(wv)], space(wv))
-    else
-        wsp = WeightSpace(wv)
-        push!(ws.weight_spaces, wsp)
-        ws.dict[weight(wv)] = space(wsp)
-    end
+function Base.iterate(ws::WeightStructure, state=1)
+    state > nweights(ws) && return nothing
+    return (ws[state], state+1)
 end
 
-function sum_weight_structure(ws::WeightStructure, d::Integer)
-    new_weight_spaces = [zeros(ComplexF64, space_dim(ws)*d, size(M, 2)*d) for M in weight_spaces(ws)]
-    for (M, new_M) in zip(weight_spaces(ws), new_weight_spaces)
-        for j in 1:d
-            new_M[(1:space_dim(ws)) .+ (j-1)*space_dim(ws), (1:size(M,2)) .+ (j-1)*size(M,2)] = M
-        end
+function Base.push!(ws::WeightStructure, w_space::WeightSpace)
+    if haskey(ws, weight(w_space))
+        ws[weight(w_space)] = hcat(ws[weight(w_space)], w_space)
+    else
+        push!(weights(ws), weight(w_space))
+        ws[weight(w_space)] = w_space
     end
-    return WeightStructure(weights(ws), new_weight_spaces)
+    return ws
 end
+
+Base.push!(ws::WeightStructure, wv::WeightVector) = push!(ws, WeightSpace(wv))
+
+function Base.:∩(ws1::WeightStructure, ws2::WeightStructure)
+    new_spaces = [w_space₁ ∩ w_space₂ for w_space₁ in ws1, w_space₂ in ws2]
+    return WeightStructure([ws for ws in new_spaces if !isnothing(ws)])
+end
+
+Base.:∩(ws::Vector{WeightStructure}) = reduce(∩, ws)
+
+# function sum_weight_structure(ws::WeightStructure, d::Integer)
+#     new_weight_spaces = [zeros(ComplexF64, space_dim(ws)*d, size(M, 2)*d) for M in weight_spaces(ws)]
+#     for (M, new_M) in zip(weight_spaces(ws), new_weight_spaces)
+#         for j in 1:d
+#             new_M[(1:space_dim(ws)) .+ (j-1)*space_dim(ws), (1:size(M,2)) .+ (j-1)*size(M,2)] = M
+#         end
+#     end
+#     return WeightStructure(weights(ws), new_weight_spaces)
+# end
 
 function sym_weight_structure(ws::WeightStructure, d::Integer, mexps::Vector{<:SparseVector})
     d = Int(d)
@@ -241,5 +273,4 @@ coefficients(we::WeightExpression) = we.coeffs
 basis(we::WeightExpression) = we.basis
 weight(we::WeightExpression) = we.weight
 expression(we::WeightExpression) = dot(coefficients(we), to_expressions(basis(we)))
-
 WeightVector(we::WeightExpression) = WeightVector(weight(we), coefficients(we))

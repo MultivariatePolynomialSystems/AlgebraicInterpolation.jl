@@ -62,39 +62,33 @@ function act(elem::LieAlgebraElem{ScalingLieAlgebra}, f::Union{Expression, Monom
     return expand(dot(differentiate(f, variables(action)), -X*variables(action)))
 end
 
-function weight_structure(a::ScalingLieAction, vars::Vector{Variable})
-    
+function inv_weight_space(a::AbstractLieAlgebraAction, vars::Vector{Variable})
+    inv_vars = setdiff(vars, variables(a))
+    isempty(inv_vars) && return nothing
+    ws = WeightSpace(zeros(Int, rank(algebra(a))), zeros(ComplexF64, length(vars), length(inv_vars)))
+    for (i, var) in enumerate(inv_vars)
+        ws[vars_dict[var], i] = 1
+    end
+    return ws
 end
 
-function hw_spaces(a::ScalingLieAction, vars::Vector{Variable})
+function weight_structure(a::ScalingLieAction, vars::Vector{Variable})
     @assert variables(a) ⊆ vars
     vars_dict = Dict(zip(vars, 1:length(vars)))
-    hw_spaces_dict = Dict{Vector{Int}, WeightSpace}()
+    hw_struct = WeightStructure()
     for (i, var) in enumerate(variables(a))
         weight = exponents(a)[:, i]
-        if haskey(hw_spaces_dict, weight)
-            sp = zeros(ComplexF64, length(vars))
-            sp[vars_dict[var]] = 1
-            hw_spaces_dict[weight].space = hcat(hw_spaces_dict[weight].space, sp)
-        else
-            hw_space = WeightSpace(weight, zeros(ComplexF64, length(vars)))
-            hw_space.space[vars_dict[var]] = 1
-            hw_spaces_dict[weight] = hw_space
-        end
+        hwv = WeightVector(weight, zeros(ComplexF64, length(vars)))
+        hwv[vars_dict[var]] = 1
+        push!(hw_struct, hwv)
     end
-    inv_vars = setdiff(vars, variables(a))
-    isempty(inv_vars) && return collect(values(hw_spaces_dict))
-    inv_hw_space = WeightSpace(zeros(Int, rank(algebra(a))), zeros(ComplexF64, length(vars), length(inv_vars)))
-    for (i, var) in enumerate(inv_vars)
-        inv_hw_space.space[vars_dict[var], i] = 1
-    end
-    if haskey(hw_spaces_dict, weight(inv_hw_space))
-        hw_spaces_dict[weight(inv_hw_space)].space = hcat(hw_spaces_dict[weight(inv_hw_space)].space, inv_hw_space.space)
-    else
-        hw_spaces_dict[weight(inv_hw_space)] = inv_hw_space
-    end
-    return collect(values(hw_spaces_dict))
+    inv_ws = inv_weight_space(a, vars)
+    !isnothing(inv_ws) && push!(hw_struct, inv_ws)
+    return hw_struct
 end
+
+hw_spaces(a::ScalingLieAction, vars::Vector{Variable}) = weight_structure(a, vars)
+
 
 struct LieAlgebraAction <: AbstractLieAlgebraAction
     alg::LieAlgebra
@@ -129,37 +123,26 @@ function act(elem::LieAlgebraElem{LieAlgebra}, f::Union{Expression, Monomial}, a
     return expand(sum([dot(differentiate(f, vars), -X*vars) for vars in var_groups(action)]))
 end
 
-function weight_structure(a::LieAlgebraAction, vars::Vector{Variable})
-    
-end
-
-function hw_spaces(a::LieAlgebraAction, vars::Vector{Variable})
+function weight_structure(a::LieAlgebraAction, vars::Vector{Variable}; as_hw_spaces::Bool=false)
     @assert variables(a) ⊆ vars
     vars_dict = Dict(zip(vars, 1:length(vars)))
-    hw_spaces_vec = WeightSpace[]
-    for hw_space in hw_spaces(algebra(a))
-        hws = WeightSpace(hw_space.weight, zeros(ComplexF64, length(vars), dim(hw_space)*nvar_groups(a)))
+    ws = WeightStructure()
+    alg_ws = as_hw_spaces ? hw_spaces(algebra(a)) : weight_structure(algebra(a))
+    for w_space in alg_ws
+        new_w_space = WeightSpace(weight(w_space), zeros(ComplexF64, length(vars), dim(w_space)*nvar_groups(a)))
         for (i, vars_group) in enumerate(var_groups(a))
             for (j, var) in enumerate(vars_group)
-                hws.space[vars_dict[var], (i-1)*dim(hw_space)+1:i*dim(hw_space)] = hw_space.space[j, :]
+                new_w_space[vars_dict[var], (i-1)*dim(w_space)+1:i*dim(w_space)] = w_space[j, :]
             end
         end
-        push!(hw_spaces_vec, hws)
+        push!(ws, new_w_space)
     end
-    inv_vars = setdiff(vars, variables(a))
-    isempty(inv_vars) && return hw_spaces_vec
-    inv_hw_space = WeightSpace(zeros(Int, rank(algebra(a))), zeros(ComplexF64, length(vars), length(inv_vars)))
-    for (i, var) in enumerate(inv_vars)
-        inv_hw_space.space[vars_dict[var], i] = 1
-    end
-    hws_dict = Dict(zip([weight(hws) for hws in hw_spaces_vec], hw_spaces_vec))
-    if haskey(hws_dict, weight(inv_hw_space))
-        hws_dict[weight(inv_hw_space)].space = hcat(hws_dict[weight(inv_hw_space)].space, inv_hw_space.space)
-    else
-        push!(hw_spaces_vec, inv_hw_space)
-    end
-    return hw_spaces_vec
+    inv_ws = inv_weight_space(a, vars)
+    !isnothing(inv_ws) && push!(ws, inv_ws)
+    return ws
 end
+
+hw_spaces(a::LieAlgebraAction, vars::Vector{Variable}) = weight_structure(a, vars, as_hw_spaces=true)
 
 
 struct SumLieAlgebraAction <: AbstractLieAlgebraAction
