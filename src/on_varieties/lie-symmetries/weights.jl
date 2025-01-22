@@ -15,6 +15,7 @@ export WeightStructure,
     sum_weight_structure
 
 
+# TODO: change to SparseVector
 struct WeightVector
     weight::Vector{Int}
     vector::Vector{ComplexF64}
@@ -24,6 +25,7 @@ weight(wv::WeightVector) = wv.weight
 vector(wv::WeightVector) = wv.vector
 Base.setindex!(wv::WeightVector, n::Number, i::Integer) = wv.vector[i] = n
 
+# TODO: change to SparseMatrix
 mutable struct WeightSpace
     weight::Vector{Int}
     matrix::Matrix{ComplexF64}
@@ -171,16 +173,6 @@ function Base.:∩(ws1::WeightStructure, ws2::WeightStructure)
 end
 
 Base.:∩(ws::Vector{WeightStructure}) = reduce(∩, ws)
-
-# function sum_weight_structure(ws::WeightStructure, d::Integer)
-#     new_weight_spaces = [zeros(ComplexF64, space_dim(ws)*d, size(M, 2)*d) for M in weight_spaces(ws)]
-#     for (M, new_M) in zip(weight_spaces(ws), new_weight_spaces)
-#         for j in 1:d
-#             new_M[(1:space_dim(ws)) .+ (j-1)*space_dim(ws), (1:size(M,2)) .+ (j-1)*size(M,2)] = M
-#         end
-#     end
-#     return WeightStructure(weights(ws), new_weight_spaces)
-# end
 
 function sym_weight_structure(ws::WeightStructure, d::Integer, mexps::Vector{<:SparseVector})
     d = Int(d)

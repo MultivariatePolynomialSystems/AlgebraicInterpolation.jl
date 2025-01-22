@@ -221,6 +221,11 @@ prodpow(
     e::AbstractSparseVector
 ) = prod(view(M,e.nzind,:).^e.nzval; dims=1)
 
+HC.evaluate(
+    mons::MonomialBasis,
+    sample::AbstractVector
+) = [prodpow(sample, mexp) for mexp in mons.mexps]
+
 function HC.evaluate(
     mons::MonomialBasis,
     samples::AbstractMatrix{T}
@@ -233,9 +238,9 @@ function HC.evaluate(
 end
 
 Base.getindex(
-    mons::MonomialBasis{Tv,Ti} where {Tv<:Integer,Ti<:Integer},
+    mons::MonomialBasis{Tv,Ti},
     inds...
-) = MonomialBasis{Tv,Ti}(getindex(mons.mexps, inds...), mons.vars)
+) where {Tv<:Integer,Ti<:Integer} = MonomialBasis{Tv,Ti}(getindex(mons.mexps, inds...), mons.vars)
 Base.getindex(mons::MonomialBasis, ind::Int) = Monomial(mons.mexps[ind], mons.vars)
 
 Base.findfirst(

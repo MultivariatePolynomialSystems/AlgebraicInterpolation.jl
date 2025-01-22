@@ -46,7 +46,8 @@ function Base.show(io::IO, ::MIME"text/plain", ρ::LieAlgebraRepresentation)
     )
     println(io, " Lie algebra: ", name(algebra(ρ)))
     println(io, " number of isotypic components: ", nisotypic(ρ))
-    print(io, " dimensions of isotypic components: ", join([dim(ic) for ic in isotypic_components(ρ)], ", "))
+    println(io, " dimensions of isotypic components: ", join([dim(ic) for ic in isotypic_components(ρ)], ", "))
+    print(io, " multiplicities of irreducible representations: ", join([nirreducible(ic) for ic in isotypic_components(ρ)], ", "))
 end
 
 # called by print and inside vectors/matrices

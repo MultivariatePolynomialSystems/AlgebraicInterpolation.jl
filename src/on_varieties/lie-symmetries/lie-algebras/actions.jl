@@ -31,9 +31,11 @@ algebra(a::ScalingLieAction) = a.alg
 variables(a::ScalingLieAction) = a.vars
 exponents(a::ScalingLieAction) = a.alg.exps
 
-function Base.show(io::IO, a::ScalingLieAction)
-    println(io, "ScalingLieAction of $(name(algebra(a)))")
-    print(io, " action:")
+function show_action(io::IO, a::ScalingLieAction; offset::Int=0, show_name::Bool=false)
+    if show_name 
+        print(io, " "^offset, "scaling algebra $(name(algebra(a))): ")
+        offset += 1
+    end
     U = exponents(a)
     if size(U, 1) == 1
         @var λ
@@ -49,12 +51,18 @@ function Base.show(io::IO, a::ScalingLieAction)
         action[j] = collect(zip(vars[nzind], exprs))
     end
     for free_action in action
-        print(io, "\n  ")
+        print(io, "\n", " "^offset)
         for (j, (var, expr)) in enumerate(free_action)
             print(io, var, " ↦ ", expr)
             j < length(free_action) && print(io, ", ")
         end
     end
+end
+
+function Base.show(io::IO, a::ScalingLieAction)
+    println(io, "ScalingLieAction of $(name(algebra(a)))")
+    print(io, " action:")
+    show_action(io, a; offset=2)
 end
 
 function act(elem::LieAlgebraElem{ScalingLieAlgebra}, f::Union{Expression, Monomial}, action::ScalingLieAction)
@@ -113,9 +121,19 @@ weights(a::LieAlgebraAction) = weights(a.alg)
 weights(a::LieAlgebraAction, inds...) = weights(a.alg, inds...)
 nweights(a::LieAlgebraAction) = nweights(a.alg)
 
+function show_action(io::IO, a::LieAlgebraAction; offset::Int=0, show_name::Bool=false)
+    if show_name
+        print(io, " "^offset, "$(name(algebra(a))): ")
+        print(io, "[", join([join(vars, ", ") for vars in var_groups(a)], "], ["), "]")
+    else
+        print(io, " "^offset, "[", join([join(vars, ", ") for vars in var_groups(a)], "], ["), "]")
+    end
+end
+
 function Base.show(io::IO, a::LieAlgebraAction)
     println(io, "LieAlgebraAction of $(name(algebra(a)))")
-    print(io, " action: [", join([join(vars, ", ") for vars in var_groups(a)], "], ["), "]")
+    print(io, " action: ")
+    show_action(io, a; offset=0)
 end
 
 function act(elem::LieAlgebraElem{LieAlgebra}, f::Union{Expression, Monomial}, action::LieAlgebraAction)
@@ -157,12 +175,11 @@ Base.getindex(a::SumLieAlgebraAction, i::Int) = actions(a)[i]
 
 function Base.show(io::IO, a::SumLieAlgebraAction)
     println(io, "SumLieAlgebraAction of $(name(algebra(a)))")
-    # for (i, a) in enumerate(actions(g))
-    #     print(io, " action of $(name(algebra(a))): [")
-    #     print(io, join([join(vars, ", ") for vars in var_groups(a)], "], ["), "]")
-    #     i < nsummands(g) && print(io, "\n")
-    # end
-    print(io, " action: ")
+    print(io, " action:")
+    for action in actions(a)
+        println(io)
+        show_action(io, action; offset=2, show_name=true)
+    end
 end
 
 # TODO
