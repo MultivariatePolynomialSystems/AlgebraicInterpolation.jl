@@ -1,6 +1,6 @@
-using MultivariateInterpolation
+using AlgebraicInterpolation
 using Test
 
-@testset "MultivariateInterpolation.jl" begin
+@testset "AlgebraicInterpolation.jl" begin
     # Write your tests here.
 end

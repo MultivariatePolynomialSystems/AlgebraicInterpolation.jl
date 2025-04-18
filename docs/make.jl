@@ -1,18 +1,18 @@
 push!(LOAD_PATH,"../src/")
 
-using MultivariateInterpolation
+using AlgebraicInterpolation
 using Documenter
 
-DocMeta.setdocmeta!(MultivariateInterpolation, :DocTestSetup, :(using MultivariateInterpolation); recursive=true)
+DocMeta.setdocmeta!(AlgebraicInterpolation, :DocTestSetup, :(using AlgebraicInterpolation); recursive=true)
 
 makedocs(;
-    modules=[MultivariateInterpolation],
+    modules=[AlgebraicInterpolation],
     authors="Viktor Korotynskiy <korotynskiy.viktor@gmail.com> and contributors",
-    repo="https://github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl/blob/{commit}{path}#{line}",
-    sitename="MultivariateInterpolation.jl",
+    repo="https://github.com/MultivariatePolynomialSystems/AlgebraicInterpolation.jl/blob/{commit}{path}#{line}",
+    sitename="AlgebraicInterpolation.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://multivariatepolynomialsystems.github.io/MultivariateInterpolation.jl",
+        canonical="https://multivariatepolynomialsystems.github.io/AlgebraicInterpolation.jl",
         edit_link="main",
         assets=["assets/custom.css"],
         collapselevel=2
@@ -37,6 +37,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/MultivariatePolynomialSystems/MultivariateInterpolation.jl.git",
+    repo="github.com/MultivariatePolynomialSystems/AlgebraicInterpolation.jl.git",
     devbranch="main",
 )

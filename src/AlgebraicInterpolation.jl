@@ -1,4 +1,4 @@
-module MultivariateInterpolation
+module AlgebraicInterpolation
 
 import HomotopyContinuation
 const HC = HomotopyContinuation
@@ -36,24 +36,8 @@ include("on_varieties/sampling.jl")
 include("on_varieties/expression_map.jl")
 include("on_varieties/varieties/map_graph.jl")
 
-# 5. Lie Symmetries
-
-# 5.1. Weights
-include("on_varieties/lie-symmetries/weights.jl")
-
-# 5.2. Lie algebras
-include("on_varieties/lie-symmetries/lie-algebras/algebras.jl")
-include("on_varieties/lie-symmetries/lie-algebras/elements.jl")
-include("on_varieties/lie-symmetries/lie-algebras/actions.jl")
-
-# 5.3. Lie algebra representations
-include("on_varieties/lie-symmetries/lie-reprs/vector-space.jl")
-include("on_varieties/lie-symmetries/lie-reprs/irreducible.jl")
-include("on_varieties/lie-symmetries/lie-reprs/isotypic.jl")
-include("on_varieties/lie-symmetries/lie-reprs/representation.jl")
-
-# 5.4. Scaling symmetries
-include("on_varieties/lie-symmetries/scalings.jl")
+# 5. Scaling symmetries
+include("on_varieties/scalings.jl")
 
 # 6. Interpolation
 include("on_varieties/interpolation.jl")
